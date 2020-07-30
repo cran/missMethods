@@ -5,32 +5,38 @@
 \title{Evaluate estimated parameters}
 \usage{
 evaluate_parameters(
-  est_pars,
-  true_pars,
+  pars_est,
+  pars_true,
   criterion = "RMSE",
-  tolerance = sqrt(.Machine$double.eps)
+  tolerance = sqrt(.Machine$double.eps),
+  est_pars,
+  true_pars
 )
 }
 \arguments{
-\item{est_pars}{a vector or matrix of estimated parameters}
+\item{pars_est}{A vector or matrix of estimated parameters.}
 
-\item{true_pars}{true parameters, normally a vector or a matrix}
+\item{pars_true}{True parameters, normally a vector or a matrix.}
 
-\item{criterion}{a string specifying the used criterion for comparing the
-imputed and original values}
+\item{criterion}{A string specifying the used criterion for comparing the
+imputed and original values.}
 
-\item{tolerance}{numeric, only used for \code{criterion = "precision"}:
-numeric differences smaller than tolerance are treated as zero/equal}
+\item{tolerance}{Numeric, only used for \code{criterion = "precision"}:
+numeric differences smaller than tolerance are treated as zero/equal.}
+
+\item{est_pars}{Deprecated, renamed to \code{pars_est}.}
+
+\item{true_pars}{Deprecated, renamed to \code{pars_true}.}
 }
 \value{
-a numeric vector of length one
+A numeric vector of length one.
 }
 \description{
 Compare estimated parameters to true parameters
 }
 \details{
-The same \code{criterion}s are implemented for \code{evaluate_parameters}
-and \code{\link{evaluate_imputed_values}}.
+The same \code{criterion}s are implemented for
+\code{evaluate_parameters} and \code{\link{evaluate_imputed_values}}.
 The possible choices are documented in \code{\link{evaluate_imputed_values}}.
 }
 \examples{

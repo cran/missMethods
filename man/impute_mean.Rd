@@ -7,13 +7,13 @@
 impute_mean(ds, type = "columnwise")
 }
 \arguments{
-\item{ds}{a data frame or matrix with missing values}
+\item{ds}{A data frame or matrix with missing values.}
 
-\item{type}{one of: "columnwise", "rowwise", "total", "Two-Way" or "Winer"
-(see details)}
+\item{type}{One of: "columnwise", "rowwise", "total", "Two-Way" or "Winer"
+(see details).}
 }
 \value{
-An object of the same class as \code{ds} with imputed missing values
+An object of the same class as \code{ds} with imputed missing values.
 }
 \description{
 Impute an observed mean for the missing values
@@ -40,8 +40,8 @@ This method was suggested by D.B Rubin to Bernaards & Sijtsma, K. (2000).
 }
 \section{A Note for tibble users}{
 
-If you use tibbles and an error like \sQuote{Lossy cast from `value` <double>
-to `x` <integer>} occurs, you will first need to convert all integer columns
+If you use tibbles and an error like \sQuote{Lossy cast from `value` double
+to integer} occurs, you will first need to convert all integer columns
 with missing values to double. Another solution is to convert the tibble with
 as.data.frame() to a data frame. The data frame will automatically convert
 integer columns to double columns, if needed.
@@ -49,11 +49,11 @@ integer columns to double columns, if needed.
 
 \examples{
 ds <- data.frame(X = 1:20, Y = 101:120)
-ds_miss <- delete_MCAR(ds, 0.2)
-ds_imp <- impute_mean(ds_miss)
+ds_mis <- delete_MCAR(ds, 0.2)
+ds_imp <- impute_mean(ds_mis)
 # completely observed columns can be of any type:
-ds_miss_char <- cbind(ds_miss, letters[1:20])
-ds_imp_char <- impute_mean(ds_miss_char)
+ds_mis_char <- cbind(ds_mis, letters[1:20])
+ds_imp_char <- impute_mean(ds_mis_char)
 }
 \references{
 Beland, S., Pichette, F., & Jolani, S. (2016). Impact on Cronbach's
@@ -68,7 +68,7 @@ Winer, B. J. (1971). \emph{Statistical principles in experimental design (2ed ed
 New York: McGraw-Hill
 }
 \seealso{
-\code{\link{apply_imputation}} the workhorse for this function
+\code{\link{apply_imputation}} the workhorse for this function.
 
 Other location parameter imputation functions: 
 \code{\link{impute_median}()},

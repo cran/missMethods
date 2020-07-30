@@ -5,86 +5,99 @@
 \title{Evaluate estimated parameters after imputation}
 \usage{
 evaluate_imputation_parameters(
-  imp_ds,
-  orig_ds = NULL,
-  true_pars = NULL,
+  ds_imp,
+  ds_orig = NULL,
+  pars_true = NULL,
   parameter = "mean",
   criterion = "RMSE",
-  which_cols = seq_len(ncol(imp_ds)),
+  cols_which = seq_len(ncol(ds_imp)),
   tolerance = sqrt(.Machine$double.eps),
-  ...
+  ...,
+  imp_ds,
+  true_pars,
+  which_cols
 )
 }
 \arguments{
-\item{imp_ds}{a data frame or matrix with imputed values}
+\item{ds_imp}{A data frame or matrix with imputed values.}
 
-\item{orig_ds}{a data frame or matrix with original (true) values}
+\item{ds_orig}{A data frame or matrix with original (true) values.}
 
-\item{true_pars}{true parameters, normally a vector or a matrix}
+\item{pars_true}{True parameters, normally a vector or a matrix.}
 
-\item{parameter}{a string specifying the estimated parameters for comparison}
+\item{parameter}{A string specifying the estimated parameters for comparison.}
 
-\item{criterion}{a string specifying the used criterion for comparing the
-imputed and original values}
+\item{criterion}{A string specifying the used criterion for comparing the
+imputed and original values.}
 
-\item{which_cols}{indices or names of columns used for evaluation}
+\item{cols_which}{Indices or names of columns used for evaluation.}
 
-\item{tolerance}{numeric, only used for \code{criterion = "precision"}:
-numeric differences smaller than tolerance are treated as zero/equal}
+\item{tolerance}{Numeric, only used for \code{criterion = "precision"}:
+numeric differences smaller than tolerance are treated as zero/equal.}
 
-\item{...}{further arguments passed to function for parameter estimation}
+\item{...}{Further arguments passed to the function for parameter estimation.}
+
+\item{imp_ds}{Deprecated, renamed to \code{ds_imp}.}
+
+\item{true_pars}{Deprecated, renamed to \code{pars_true}.}
+
+\item{which_cols}{Deprecated, renamed to \code{cols_which}.}
 }
 \value{
-a numeric vector of length one
+A numeric vector of length one.
 }
 \description{
 Compares estimated parameters after imputation to true parameters or
 estimates based on the original dataset
 }
 \details{
-Either \code{orig_ds} or \code{true_pars} must be supplied and the other one
-must be \code{NULL} (default: both are \code{NULL}, just supply one, see
-examples). The following \code{parameter}s are implemented:
-"mean", "median", "var", "sd", "quantile", "cov", "cor".
-Some details follows:
+Either \code{ds_orig} or \code{pars_true} must be supplied and the
+other one must be \code{NULL} (default: both are \code{NULL}, just supply
+one, see examples). The following \code{parameter}s are implemented:
+"mean", "median", "var", "sd", "quantile", "cov", "cov_only", cor", "cor_only".
+Some details follow:
 \itemize{
-\item{"var": only the variances of the columns (the diagonal elements of the
-covariance matrix) are compared. The whole covariance matrix can be compared
-with "cov".}
+\item{"var", "cov" and "cov_only": For "var" only the variances of the
+columns (the diagonal elements of the covariance matrix) are compared. For
+"cov" the whole covariance matrix is compared. For "cov_only" only the upper
+triangle (excluding the diagonal) of the covariance matrix is compared.}
+\item{"cor", "cor_only": For "cor" the whole correlation matrix is compared.
+For "cor_only" only the upper triangle (excluding the diagonal) of the
+correlation matrix is compared.}
 \item{"quantile": the quantiles can be set via the additional
 argument \code{probs} (see examples). Otherwise, the default quantiles from
 \code{\link[stats]{quantile}} will be used.}
 }
 
-The argument \code{which_cols} allows the selection of columns for comparison
-(see examples). If \code{true_pars} is used, it is assumed that only relevant
+The argument \code{cols_which} allows the selection of columns for comparison
+(see examples). If \code{pars_true} is used, it is assumed that only relevant
 parameters are supplied (see examples).
 
 Possible choices for the argument \code{criterion} are documented in
 \code{\link{evaluate_imputed_values}}
 }
 \examples{
-# only orig_ds known
-orig_ds <- data.frame(X = 1:10, Y = 101:101)
-imp_ds <- impute_mean(delete_MCAR(orig_ds, 0.4))
-evaluate_imputation_parameters(imp_ds, orig_ds = orig_ds)
+# only ds_orig known
+ds_orig <- data.frame(X = 1:10, Y = 101:101)
+ds_imp <- impute_mean(delete_MCAR(ds_orig, 0.4))
+evaluate_imputation_parameters(ds_imp, ds_orig = ds_orig)
 
 # true parameters known
-orig_ds <- data.frame(X = rnorm(100), Y = rnorm(100, mean = 10))
-imp_ds <- impute_mean(delete_MCAR(orig_ds, 0.3))
-evaluate_imputation_parameters(imp_ds, true_pars = c(0, 10), parameter = "mean")
-evaluate_imputation_parameters(imp_ds, true_pars = c(1, 1), parameter = "var")
+ds_orig <- data.frame(X = rnorm(100), Y = rnorm(100, mean = 10))
+ds_imp <- impute_mean(delete_MCAR(ds_orig, 0.3))
+evaluate_imputation_parameters(ds_imp, pars_true = c(0, 10), parameter = "mean")
+evaluate_imputation_parameters(ds_imp, pars_true = c(1, 1), parameter = "var")
 
 # set quantiles
-evaluate_imputation_parameters(imp_ds,
-  true_pars = c(qnorm(0.3), qnorm(0.3, mean = 10)),
+evaluate_imputation_parameters(ds_imp,
+  pars_true = c(qnorm(0.3), qnorm(0.3, mean = 10)),
   parameter = "quantile", probs = 0.3
 )
 
 # compare only column Y
-evaluate_imputation_parameters(imp_ds,
-  true_pars = c(Y = 10), parameter = "mean",
-  which_cols = "Y"
+evaluate_imputation_parameters(ds_imp,
+  pars_true = c(Y = 10), parameter = "mean",
+  cols_which = "Y"
 )
 }
 \references{

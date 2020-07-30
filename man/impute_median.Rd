@@ -7,16 +7,16 @@
 impute_median(ds, type = "columnwise", ordered_low = FALSE)
 }
 \arguments{
-\item{ds}{a data frame or matrix with missing values}
+\item{ds}{A data frame or matrix with missing values.}
 
-\item{type}{one of: "columnwise", "rowwise", "total", "Two-Way" or "Winer"
-(see details)}
+\item{type}{One of: "columnwise", "rowwise", "total", "Two-Way" or "Winer"
+(see details).}
 
-\item{ordered_low}{logical; used for the calculation of ordered factors (for
-details see: \link{median.factor})}
+\item{ordered_low}{Logical; used for the calculation of the median from
+ordered factors (for details see: \link{median.factor}).}
 }
 \value{
-An object of the same class as \code{ds} with imputed missing values
+An object of the same class as \code{ds} with imputed missing values.
 }
 \description{
 Impute an observed median value for every missing value
@@ -33,8 +33,8 @@ the median values for imputation.
 }
 \section{A Note for tibble users}{
 
-If you use tibbles and an error like \sQuote{Lossy cast from `value` <double>
-to `x` <integer>} occurs, you will first need to convert all integer columns
+If you use tibbles and an error like \sQuote{Lossy cast from `value` double
+to integer} occurs, you will first need to convert all integer columns
 with missing values to double. Another solution is to convert the tibble with
 as.data.frame() to a data frame. The data frame will automatically convert
 integer columns to double columns, if needed.
@@ -42,11 +42,11 @@ integer columns to double columns, if needed.
 
 \examples{
 ds <- data.frame(X = 1:20, Y = ordered(LETTERS[1:20]))
-ds_miss <- delete_MCAR(ds, 0.2)
-ds_imp <- impute_median(ds_miss)
+ds_mis <- delete_MCAR(ds, 0.2)
+ds_imp <- impute_median(ds_mis)
 # completely observed columns can be of any type:
-ds_miss_char <- cbind(ds_miss, letters[1:20])
-ds_imp_char <- impute_median(ds_miss_char)
+ds_mis_char <- cbind(ds_mis, letters[1:20])
+ds_imp_char <- impute_median(ds_mis_char)
 }
 \references{
 Beland, S., Pichette, F., & Jolani, S. (2016). Impact on Cronbach's
@@ -54,7 +54,7 @@ Beland, S., Pichette, F., & Jolani, S. (2016). Impact on Cronbach's
 \emph{The Quantitative Methods for Psychology}, 12(1), 57-73.
 }
 \seealso{
-\code{\link{apply_imputation}} the workhorse for this function
+\code{\link{apply_imputation}} the workhorse for this function.
 
 \code{\link[stats]{median}}, \code{\link{median.factor}}
 

@@ -7,48 +7,52 @@
 delete_MNAR_one_group(
   ds,
   p,
-  miss_cols,
+  cols_mis,
   cutoff_fun = median,
   prop = 0.5,
   use_lpSolve = TRUE,
   ordered_as_unordered = FALSE,
   stochastic = FALSE,
-  ...
+  ...,
+  miss_cols
 )
 }
 \arguments{
-\item{ds}{a data frame or matrix in which missing values will be created}
+\item{ds}{A data frame or matrix in which missing values will be created.}
 
-\item{p}{a numeric vector with length one or equal to length \code{miss_cols};
-the probability that a value is missing}
+\item{p}{A numeric vector with length one or equal to length \code{cols_mis};
+the probability that a value is missing.}
 
-\item{miss_cols}{a vector of column names or indices of columns in which
-missing values will be created}
+\item{cols_mis}{A vector of column names or indices of columns in which
+missing values will be created.}
 
-\item{cutoff_fun}{function that calculates the cutoff values in the
-\code{ctrl_cols}}
+\item{cutoff_fun}{Function that calculates the cutoff values in the
+\code{cols_ctrl}.}
 
-\item{prop}{numeric of length one; (minimum) proportion of rows in group 1}
+\item{prop}{Numeric of length one; (minimum) proportion of rows in group 1
+(only used for unordered factors).}
 
-\item{use_lpSolve}{logical; should lpSolve be used for the determination of
-groups, if \code{ctrl_cols[i]} is an unordered factor}
+\item{use_lpSolve}{Logical; should lpSolve be used for the determination of
+groups, if \code{cols_ctrl[i]} is an unordered factor.}
 
-\item{ordered_as_unordered}{logical; should ordered factors be treated as
-unordered factors}
+\item{ordered_as_unordered}{Logical; should ordered factors be treated as
+unordered factors.}
 
-\item{stochastic}{logical; see details}
+\item{stochastic}{Logical; see details.}
 
-\item{...}{further arguments passed to \code{cutoff_fun}}
+\item{...}{Further arguments passed to \code{cutoff_fun}.}
+
+\item{miss_cols}{Deprecated, use cols_mis instead.}
 }
 \value{
-An object of the same class as \code{ds} with missing values
+An object of the same class as \code{ds} with missing values.
 }
 \description{
 Create missing not at random (MNAR) values by deleting values in one of two
 groups in a data frame or a matrix
 }
 \details{
-The functions \code{delete_MNAR_one_group} and \code{\link{delete_MAR_one_group}} are sisters. The only difference between these two functions is the column that controls the generation of missing values. In \code{\link{delete_MAR_one_group}} a separate column \code{ctrl_cols[i]} controls the generation of missing values in \code{miss_cols[i]}. In contrast, in \code{delete_MNAR_one_group} the generation of missing values in \code{miss_cols[i]} is controlled by \code{miss_cols[i]} itself. All other aspects are identical for both functions. Therefore, further details can be found in \code{\link{delete_MAR_one_group}}.
+The functions \code{delete_MNAR_one_group} and \code{\link{delete_MAR_one_group}} are sisters. The only difference between these two functions is the column that controls the generation of missing values. In \code{\link{delete_MAR_one_group}} a separate column \code{cols_ctrl[i]} controls the generation of missing values in \code{cols_mis[i]}. In contrast, in \code{delete_MNAR_one_group} the generation of missing values in \code{cols_mis[i]} is controlled by \code{cols_mis[i]} itself. All other aspects are identical for both functions. Therefore, further details can be found in \code{\link{delete_MAR_one_group}}.
 }
 \examples{
 ds <- data.frame(X = 1:20, Y = 101:120)

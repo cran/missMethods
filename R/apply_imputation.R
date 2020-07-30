@@ -38,14 +38,14 @@
 #' is observed and \code{type = "columnwise"}), then a warning will be issued
 #' and no value will be imputed in the corresponding column or row.
 #'
+#' @param FUN The function to be applied for imputation.
+#' @param type A string specifying the values used for imputation (see details).
+#' @param ... Further arguments passed to \code{FUN}.
+#'
 #' @seealso A convenient interface exists for common cases like mean imputation:
 #'   \code{\link{impute_mean}}, \code{\link{impute_median}},
-#'   \code{\link{impute_mode}}. All these functions call
-#'   \code{apply_imputation}.
-#'
-#' @param FUN the function to be applied for imputation
-#' @param type a string specifying the values used for imputation, see details
-#' @param ... further arguments passed to \code{FUN}
+#'   \code{\link{impute_mode}}. All these functions
+#'   call \code{apply_imputation}.
 #'
 #' @references Beland, S., Pichette, F., & Jolani, S. (2016). Impact on
 #'   Cronbach's \eqn{\alpha}{alpha} of simple treatment methods for missing
@@ -55,33 +55,39 @@
 #'
 #' @examples
 #' ds <- data.frame(X = 1:20, Y = 101:120)
-#' ds_miss <- delete_MCAR(ds, 0.2)
-#' ds_imp_app <- apply_imputation(ds_miss, FUN = mean, type = "total")
+#' ds_mis <- delete_MCAR(ds, 0.2)
+#' ds_imp_app <- apply_imputation(ds_mis, FUN = mean, type = "total")
 #' # the same result can be achieved via impute_mean():
-#' ds_imp_mean <- impute_mean(ds_miss, type = "total")
+#' ds_imp_mean <- impute_mean(ds_mis, type = "total")
 #' all.equal(ds_imp_app, ds_imp_mean)
 apply_imputation <- function(ds, FUN = mean, type = "columnwise", ...) {
-  # the workhorse for the location parameter imputation methods and other imputation methods
+  # The workhorse for the location parameter imputation methods and other
+  # imputation methods
 
   # check args --------------------------------------------
   if (!is_df_or_matrix(ds)) {
     stop("ds must be a data frame or a matrix")
   }
   FUN <- match.fun(FUN)
-  type <- match.arg(type, c("columnwise", "rowwise", "total", "Two-Way", "Winer"))
+  type <- match.arg(
+    type,
+    c("columnwise", "rowwise", "total", "Two-Way", "Winer")
+  )
 
   if (requireNamespace("tibble", quietly = TRUE)) {
     if (tibble::is_tibble(ds) && type %in% c("total", "Two-Way") &&
       utils::packageVersion("tibble") < package_version("2.99.99.9012")) {
-      stop("ds is a tibble and logical subsetting, which is needed for 'total' and 'Two-Way',
-      is only supported for tibbles with package versions >= 2.99.99.9012;
-      possible solutions:
+      stop("ds is a tibble and logical subsetting, which is needed for '
+      total' and 'Two-Way', is only supported for tibbles with package
+      versions >= 2.99.99.9012; possible solutions:
       * update package tibble
       * convert ds to data frame via as.data.frame
       * do not use 'total' or 'Two-Way'",
         call. = FALSE
       )
-    } # for more details see: https://github.com/tidyverse/tibble/releases/tag/v2.99.99.9012
+      # for more details see:
+      # https://github.com/tidyverse/tibble/releases/tag/v2.99.99.9012
+    }
   }
 
   # define M and check all NA

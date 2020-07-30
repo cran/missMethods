@@ -7,16 +7,16 @@
 apply_imputation(ds, FUN = mean, type = "columnwise", ...)
 }
 \arguments{
-\item{ds}{a data frame or matrix with missing values}
+\item{ds}{A data frame or matrix with missing values.}
 
-\item{FUN}{the function to be applied for imputation}
+\item{FUN}{The function to be applied for imputation.}
 
-\item{type}{a string specifying the values used for imputation, see details}
+\item{type}{A string specifying the values used for imputation (see details).}
 
-\item{...}{further arguments passed to \code{FUN}}
+\item{...}{Further arguments passed to \code{FUN}.}
 }
 \value{
-An object of the same class as \code{ds} with imputed missing values
+An object of the same class as \code{ds} with imputed missing values.
 }
 \description{
 Apply a function for imputation over rows, columns or combinations of both
@@ -57,8 +57,8 @@ and no value will be imputed in the corresponding column or row.
 }
 \section{A Note for tibble users}{
 
-If you use tibbles and an error like \sQuote{Lossy cast from `value` <double>
-to `x` <integer>} occurs, you will first need to convert all integer columns
+If you use tibbles and an error like \sQuote{Lossy cast from `value` double
+to integer} occurs, you will first need to convert all integer columns
 with missing values to double. Another solution is to convert the tibble with
 as.data.frame() to a data frame. The data frame will automatically convert
 integer columns to double columns, if needed.
@@ -66,10 +66,10 @@ integer columns to double columns, if needed.
 
 \examples{
 ds <- data.frame(X = 1:20, Y = 101:120)
-ds_miss <- delete_MCAR(ds, 0.2)
-ds_imp_app <- apply_imputation(ds_miss, FUN = mean, type = "total")
+ds_mis <- delete_MCAR(ds, 0.2)
+ds_imp_app <- apply_imputation(ds_mis, FUN = mean, type = "total")
 # the same result can be achieved via impute_mean():
-ds_imp_mean <- impute_mean(ds_miss, type = "total")
+ds_imp_mean <- impute_mean(ds_mis, type = "total")
 all.equal(ds_imp_app, ds_imp_mean)
 }
 \references{
@@ -80,6 +80,6 @@ Beland, S., Pichette, F., & Jolani, S. (2016). Impact on
 \seealso{
 A convenient interface exists for common cases like mean imputation:
   \code{\link{impute_mean}}, \code{\link{impute_median}},
-  \code{\link{impute_mode}}. All these functions call
-  \code{apply_imputation}.
+  \code{\link{impute_mode}}. All these functions
+  call \code{apply_imputation}.
 }

@@ -4,52 +4,64 @@
 \alias{delete_MAR_rank}
 \title{Create MAR values using a ranking mechanism}
 \usage{
-delete_MAR_rank(ds, p, miss_cols, ctrl_cols, ties.method = "average")
+delete_MAR_rank(
+  ds,
+  p,
+  cols_mis,
+  cols_ctrl,
+  ties.method = "average",
+  miss_cols,
+  ctrl_cols
+)
 }
 \arguments{
-\item{ds}{a data frame or matrix in which missing values will be created}
+\item{ds}{A data frame or matrix in which missing values will be created.}
 
-\item{p}{a numeric vector with length one or equal to length \code{miss_cols};
-the probability that a value is missing}
+\item{p}{A numeric vector with length one or equal to length \code{cols_mis};
+the probability that a value is missing.}
 
-\item{miss_cols}{a vector of column names or indices of columns in which
-missing values will be created}
+\item{cols_mis}{A vector of column names or indices of columns in which
+missing values will be created.}
 
-\item{ctrl_cols}{a vector of column names or indices of columns, which
-controls the creation of missing values in \code{miss_cols}. Must be of the
-same length as \code{miss_cols}.}
+\item{cols_ctrl}{A vector of column names or indices of columns, which
+controls the creation of missing values in \code{cols_mis}. Must be of the
+same length as \code{cols_mis}.}
 
-\item{ties.method}{how ties are handled, passed to \code{\link[base]{rank}}}
+\item{ties.method}{How ties are handled. Passed to \code{\link[base]{rank}}.}
+
+\item{miss_cols}{Deprecated, use cols_mis instead.}
+
+\item{ctrl_cols}{Deprecated, use cols_ctrl instead.}
 }
 \value{
-An object of the same class as \code{ds} with missing values
+An object of the same class as \code{ds} with missing values.
 }
 \description{
-Create missing at random (MAR) values using a ranking mechanism in a data frame or
-a matrix
+Create missing at random (MAR) values using a ranking mechanism in a data
+frame or a matrix
 }
 \details{
 This function creates missing at random (MAR) values in the columns
-specified by the argument \code{miss_cols}.
+specified by the argument \code{cols_mis}.
 The probability for missing values is controlled by \code{p}.
 If \code{p} is a single number, then the overall probability for a value to
-be missing will be \code{p} in all columns of \code{miss_cols}.
+be missing will be \code{p} in all columns of \code{cols_mis}.
 (Internally \code{p} will be replicated to a vector of the same length as
-\code{miss_cols}.
+\code{cols_mis}.
 So, all \code{p[i]} in the following sections will be equal to the given
 single number \code{p}.)
-Otherwise, \code{p} must be of the same length as \code{miss_cols}.
+Otherwise, \code{p} must be of the same length as \code{cols_mis}.
 In this case, the overall probability for a value to be missing will be
-\code{p[i]} in the column \code{miss_cols[i]}.
-The position of the missing values in \code{miss_cols[i]} is controlled by
-\code{ctrl_cols[i]}.
-The following procedure is applied for each pair of \code{ctrl_cols[i]} and
-\code{miss_cols[i]} to determine the positions of missing values:
+\code{p[i]} in the column \code{cols_mis[i]}.
+The position of the missing values in \code{cols_mis[i]} is controlled by
+\code{cols_ctrl[i]}.
+The following procedure is applied for each pair of \code{cols_ctrl[i]} and
+\code{cols_mis[i]} to determine the positions of missing values:
 
-The probability for a missing value in a row of \code{miss_cols[i]} is
-proportional to the rank of the value in \code{ctrl_cols[i]} in the same row.
+The probability for a missing value in a row of \code{cols_mis[i]} is
+proportional to the rank of the value in \code{cols_ctrl[i]} in the same row.
 In total \code{round(nrow(ds) * p[i])} missing values are created in
-\code{miss_cols[i]}.
+\code{cols_mis[i]}.
 The ranks are calculated via \code{\link[base]{rank}}.
 The argument \code{ties.method} is directly passed to this function.
 Possible choices for \code{ties.method} are documented in

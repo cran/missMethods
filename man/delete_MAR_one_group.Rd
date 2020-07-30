@@ -7,46 +7,53 @@
 delete_MAR_one_group(
   ds,
   p,
-  miss_cols,
-  ctrl_cols,
+  cols_mis,
+  cols_ctrl,
   cutoff_fun = median,
   prop = 0.5,
   use_lpSolve = TRUE,
   ordered_as_unordered = FALSE,
   stochastic = FALSE,
-  ...
+  ...,
+  miss_cols,
+  ctrl_cols
 )
 }
 \arguments{
-\item{ds}{a data frame or matrix in which missing values will be created}
+\item{ds}{A data frame or matrix in which missing values will be created.}
 
-\item{p}{a numeric vector with length one or equal to length \code{miss_cols};
-the probability that a value is missing}
+\item{p}{A numeric vector with length one or equal to length \code{cols_mis};
+the probability that a value is missing.}
 
-\item{miss_cols}{a vector of column names or indices of columns in which
-missing values will be created}
+\item{cols_mis}{A vector of column names or indices of columns in which
+missing values will be created.}
 
-\item{ctrl_cols}{a vector of column names or indices of columns, which
-controls the creation of missing values in \code{miss_cols}. Must be of the
-same length as \code{miss_cols}.}
+\item{cols_ctrl}{A vector of column names or indices of columns, which
+controls the creation of missing values in \code{cols_mis}. Must be of the
+same length as \code{cols_mis}.}
 
-\item{cutoff_fun}{function that calculates the cutoff values in the
-\code{ctrl_cols}}
+\item{cutoff_fun}{Function that calculates the cutoff values in the
+\code{cols_ctrl}.}
 
-\item{prop}{numeric of length one; (minimum) proportion of rows in group 1}
+\item{prop}{Numeric of length one; (minimum) proportion of rows in group 1
+(only used for unordered factors).}
 
-\item{use_lpSolve}{logical; should lpSolve be used for the determination of
-groups, if \code{ctrl_cols[i]} is an unordered factor}
+\item{use_lpSolve}{Logical; should lpSolve be used for the determination of
+groups, if \code{cols_ctrl[i]} is an unordered factor.}
 
-\item{ordered_as_unordered}{logical; should ordered factors be treated as
-unordered factors}
+\item{ordered_as_unordered}{Logical; should ordered factors be treated as
+unordered factors.}
 
-\item{stochastic}{logical; see details}
+\item{stochastic}{Logical; see details.}
 
-\item{...}{further arguments passed to \code{cutoff_fun}}
+\item{...}{Further arguments passed to \code{cutoff_fun}.}
+
+\item{miss_cols}{Deprecated, use cols_mis instead.}
+
+\item{ctrl_cols}{Deprecated, use cols_ctrl instead.}
 }
 \value{
-An object of the same class as \code{ds} with missing values
+An object of the same class as \code{ds} with missing values.
 }
 \description{
 Create missing at random (MAR) values by deleting values in one of two
@@ -54,48 +61,48 @@ groups in a data frame or a matrix
 }
 \details{
 This function creates missing at random (MAR) values in the columns
-specified by the argument \code{miss_cols}.
+specified by the argument \code{cols_mis}.
 The probability for missing values is controlled by \code{p}.
 If \code{p} is a single number, then the overall probability for a value to
-be missing will be \code{p} in all columns of \code{miss_cols}.
+be missing will be \code{p} in all columns of \code{cols_mis}.
 (Internally \code{p} will be replicated to a vector of the same length as
-\code{miss_cols}.
+\code{cols_mis}.
 So, all \code{p[i]} in the following sections will be equal to the given
 single number \code{p}.)
-Otherwise, \code{p} must be of the same length as \code{miss_cols}.
+Otherwise, \code{p} must be of the same length as \code{cols_mis}.
 In this case, the overall probability for a value to be missing will be
-\code{p[i]} in the column \code{miss_cols[i]}.
-The position of the missing values in \code{miss_cols[i]} is controlled by
-\code{ctrl_cols[i]}.
-The following procedure is applied for each pair of \code{ctrl_cols[i]} and
-\code{miss_cols[i]} to determine the positions of missing values:
+\code{p[i]} in the column \code{cols_mis[i]}.
+The position of the missing values in \code{cols_mis[i]} is controlled by
+\code{cols_ctrl[i]}.
+The following procedure is applied for each pair of \code{cols_ctrl[i]} and
+\code{cols_mis[i]} to determine the positions of missing values:
 
 At first, the rows of \code{ds} are divided into two groups.
 Therefore, the \code{cutoff_fun} calculates a cutoff value for
-\code{ctrl_cols[i]} (via \code{cutoff_fun(ds[, ctrl_cols[i]], ...)}.
+\code{cols_ctrl[i]} (via \code{cutoff_fun(ds[, cols_ctrl[i]], ...)}.
 The group 1 consists of the rows, whose values in
-\code{ctrl_cols[i]} are below the calculated cutoff value.
+\code{cols_ctrl[i]} are below the calculated cutoff value.
 If the so defined group 1 is empty, the rows that are equal to the
 cutoff value will be added to this group (otherwise, these rows will
 belong to group 2).
 The group 2 consists of the remaining rows, which are not part of group 1.
 Now one of these two groups is chosen randomly.
-In the chosen group, values are deleted in \code{miss_cols[i]}.
-In the other group, no missing values will be created in \code{miss_cols[i]}.
+In the chosen group, values are deleted in \code{cols_mis[i]}.
+In the other group, no missing values will be created in \code{cols_mis[i]}.
 
 If \code{stochastic = FALSE} (the default), then \code{floor(nrow(ds) * p[i])}
 or \code{ceiling(nrow(ds) * p[i])} values will be set \code{NA} in
-column \code{miss_cols[i]} (depending on the grouping).
+column \code{cols_mis[i]} (depending on the grouping).
 If \code{stochastic = TRUE}, each value in the group with missing values
 will have a probability to be missing, to meet a proportion of
-\code{p[i]} of missing values in \code{miss_cols[i]} in expectation.
+\code{p[i]} of missing values in \code{cols_mis[i]} in expectation.
 The effect of \code{stochastic} is further discussed in
 \code{\link{delete_MCAR}}.
 }
 \section{Treatment of factors}{
 
 
-If \code{ds[, ctrl_cols[i]]} is an unordered factor, then the concept of a
+If \code{ds[, cols_ctrl[i]]} is an unordered factor, then the concept of a
 cutoff value is not meaningful and cannot be applied.
 Instead, a combinations of the levels of the unordered factor is searched that
 \itemize{

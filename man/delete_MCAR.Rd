@@ -7,63 +7,66 @@
 delete_MCAR(
   ds,
   p,
-  miss_cols = seq_len(ncol(ds)),
+  cols_mis = seq_len(ncol(ds)),
   stochastic = FALSE,
-  p_overall = FALSE
+  p_overall = FALSE,
+  miss_cols
 )
 }
 \arguments{
-\item{ds}{a data frame or matrix in which missing values will be created}
+\item{ds}{A data frame or matrix in which missing values will be created.}
 
-\item{p}{a numeric vector with length one or equal to length \code{miss_cols};
-the probability that a value is missing}
+\item{p}{A numeric vector with length one or equal to length \code{cols_mis};
+the probability that a value is missing.}
 
-\item{miss_cols}{a vector of column names or indices of columns in which
-missing values will be created}
+\item{cols_mis}{A vector of column names or indices of columns in which
+missing values will be created.}
 
-\item{stochastic}{logical; see details}
+\item{stochastic}{Logical; see details.}
 
-\item{p_overall}{logical; see details}
+\item{p_overall}{Logical; see details.}
+
+\item{miss_cols}{Deprecated, use cols_mis instead.}
 }
 \value{
-An object of the same class as \code{ds} with missing values
+An object of the same class as \code{ds} with missing values.
 }
 \description{
 Create missing completely at random (MCAR) values in a data frame or a matrix
 }
 \details{
-This function creates missing completely at random (MCAR) values in the
-dataset \code{ds}.
+This function creates missing completely at random (MCAR) values in
+the dataset \code{ds}.
 The proportion of missing values is specified with \code{p}.
-The columns in which missing values are created can be set via \code{miss_cols}.
-If \code{miss_cols} is not specified, then missing values are created in
+The columns in which missing values are created can be set via \code{cols_mis}.
+If \code{cols_mis} is not specified, then missing values are created in
 every column.
 
 The probability for missing values is controlled by \code{p}. If \code{p} is
 a single number, then the overall probability for a value to be missing will
-be \code{p} in all columns of \code{miss_cols}. (Internally \code{p} will be
-replicated to a vector of the same length as \code{miss_cols}. So, all
+be \code{p} in all columns of \code{cols_mis}. (Internally \code{p} will be
+replicated to a vector of the same length as \code{cols_mis}. So, all
 \code{p[i]} in the following sections will be equal to the given single
 number \code{p}.) Otherwise, \code{p} must be of the same length as
-\code{miss_cols}. In this case, the overall probability for a value to be
-missing will be \code{p[i]} in the column \code{miss_cols[i]}.
+\code{cols_mis}. In this case, the overall probability for a value to be
+missing will be \code{p[i]} in the column \code{cols_mis[i]}.
 
 If \code{stochastic = FALSE} and \code{p_overall = FALSE} (the default), then
 exactly \code{round(nrow(ds) * p[i])} values will be set \code{NA} in column
-\code{miss_cols[i]}. If \code{stochastic = FALSE} and \code{p_overall =
+\code{cols_mis[i]}. If \code{stochastic = FALSE} and \code{p_overall =
 TRUE}, then \code{p} must be of length one and exactly \code{round(nrow(ds) *
-p * length(miss_cols))} values will be set NA (over all columns in
-\code{miss_cols}). This can result in a proportion of missing values in every
+p * length(cols_mis))} values will be set NA (over all columns in
+\code{cols_mis}). This can result in a proportion of missing values in every
 \code{miss_col} unequal to \code{p}, but the proportion of missing values in
 all columns together will be close to \code{p}.
 
-If \code{stochastic = TRUE}, then each value in column \code{miss_cols[i]}
+If \code{stochastic = TRUE}, then each value in column \code{cols_mis[i]}
 has the probability \code{p[i]} to be missing. In this case, the number of
-missing values in \code{miss_cols[i]} is a random variable with a binomial
-distribution \emph{B}(\code{nrow(ds)}, \code{p[i]}). This can (and will most of the time)
-lead to more or less missing values than \code{round(nrow(ds) * p[i])} in
-each column. If \code{stochastic = TRUE}, then the argument \code{p_overall}
-is ignored because it is superfluous.
+missing values in \code{cols_mis[i]} is a random variable with a binomial
+distribution \emph{B}(\code{nrow(ds)}, \code{p[i]}). This can (and will most
+of the time) lead to more or less missing values than
+\code{round(nrow(ds) * p[i])} in each column. If \code{stochastic = TRUE},
+then the argument \code{p_overall} is ignored because it is superfluous.
 }
 \examples{
 ds <- data.frame(X = 1:20, Y = 101:120)

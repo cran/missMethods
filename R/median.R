@@ -5,7 +5,7 @@
 #' Currently, the median for an ordered factor is not implemented in base R.
 #' This function is a remedy for this. It allows the computation of \dQuote{a
 #' median} for ordered factors (see below) and overwrites the error message for
-#' unordered factors from \code{\link[stats]{median.default}} (hence, the
+#' unordered factors from \code{\link[=median]{median.default}} (hence, the
 #' function name is median.factor and not median.ordered).
 #'
 #' If the length of \code{x} is even, then the median will be the middle value
@@ -22,11 +22,11 @@
 #' returned (this value is called \sQuote{low-median} in
 #' \code{\link[stats]{mad}}).
 #'
-#' @param x an ordered factor (for unordered factors an error will be thrown)
-#' @param na.rm logical; should \code{NA} be removed before computation
-#' @param ordered_low logical; only used if the length of x is even and the two
-#'   middle values are unequal (see details)
-#' @param ... not used in this function
+#' @param x An ordered factor (for unordered factors an error will be thrown).
+#' @param na.rm Logical; should \code{NA} be removed before computation?
+#' @param ordered_low Logical; only used if the length of x is even and the two
+#'   middle values are unequal (see details).
+#' @param ... Not used in this function.
 #'
 #' @return a length-one factor
 #' @export
@@ -36,7 +36,8 @@
 #' ord_factor_odd <- ordered(letters[1:5])
 #' median(ord_factor_odd) # calls median.factor, if package is loaded
 #'
-#' # if only base R is loaded, median.default will be called and will throw an error:
+#' # If only base R is loaded, median.default will be called
+#' # and will throw an error:
 #' tryCatch(median.default(ord_factor_odd), error = function(e) e)
 #'
 #' ord_factor_even <- ordered(letters[1:4])

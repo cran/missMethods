@@ -38,11 +38,11 @@
 #'
 #' @examples
 #' ds <- data.frame(X = 1:20, Y = 101:120)
-#' ds_miss <- delete_MCAR(ds, 0.2)
-#' ds_imp <- impute_mean(ds_miss)
+#' ds_mis <- delete_MCAR(ds, 0.2)
+#' ds_imp <- impute_mean(ds_mis)
 #' # completely observed columns can be of any type:
-#' ds_miss_char <- cbind(ds_miss, letters[1:20])
-#' ds_imp_char <- impute_mean(ds_miss_char)
+#' ds_mis_char <- cbind(ds_mis, letters[1:20])
+#' ds_imp_char <- impute_mean(ds_mis_char)
 impute_mean <- function(ds, type = "columnwise") {
   apply_imputation(ds, FUN = mean, type = type)
 }
@@ -65,8 +65,8 @@ impute_mean <- function(ds, type = "columnwise") {
 #' The function \code{\link[stats]{median}} is used for the calculation of
 #' the median values for imputation.
 #'
-#' @param ordered_low logical; used for the calculation of ordered factors (for
-#'   details see: \link{median.factor})
+#' @param ordered_low Logical; used for the calculation of the median from
+#'   ordered factors (for details see: \link{median.factor}).
 #'
 #' @export
 #' @seealso
@@ -74,11 +74,11 @@ impute_mean <- function(ds, type = "columnwise") {
 #'
 #' @examples
 #' ds <- data.frame(X = 1:20, Y = ordered(LETTERS[1:20]))
-#' ds_miss <- delete_MCAR(ds, 0.2)
-#' ds_imp <- impute_median(ds_miss)
+#' ds_mis <- delete_MCAR(ds, 0.2)
+#' ds_imp <- impute_median(ds_mis)
 #' # completely observed columns can be of any type:
-#' ds_miss_char <- cbind(ds_miss, letters[1:20])
-#' ds_imp_char <- impute_median(ds_miss_char)
+#' ds_mis_char <- cbind(ds_mis, letters[1:20])
+#' ds_imp_char <- impute_median(ds_mis_char)
 impute_median <- function(ds, type = "columnwise", ordered_low = FALSE) {
   apply_imputation(ds, FUN = median, ordered_low = ordered_low)
 }
@@ -93,9 +93,9 @@ impute_median <- function(ds, type = "columnwise", ordered_low = FALSE) {
 #'
 #' @details
 #' This function behaves exactly like \code{\link{impute_mean}}. The only
-#' difference is that it imputes a mode instead of a mean. All \code{type}s from
-#' \code{\link{impute_mean}} are also implemented for \code{impute_mode}. They
-#' are documented in \code{\link{impute_mean}} and
+#' difference is that it imputes a mode instead of a mean. All \code{type}s
+#' from \code{\link{impute_mean}} are also implemented for \code{impute_mode}.
+#' They are documented in \code{\link{impute_mean}} and
 #' \code{\link{apply_imputation}}.
 #'
 #' A mode value of a vector \emph{x} is a most frequent value of \emph{x}.
@@ -106,8 +106,8 @@ impute_median <- function(ds, type = "columnwise", ordered_low = FALSE) {
 #'
 #' @examples
 #' ds <- data.frame(X = c(1:12, rep(8, 8)), Y = 101:120)
-#' ds_miss <- delete_MCAR(ds, 0.2)
-#' ds_imp <- impute_mode(ds_miss)
+#' ds_mis <- delete_MCAR(ds, 0.2)
+#' ds_imp <- impute_mode(ds_mis)
 impute_mode <- function(ds, type = "columnwise") {
   calc_mode <- function(x) {
     unique_x <- unique(x)

@@ -6,22 +6,26 @@
 #' @template evaluation
 #' @template evaluate-parameter
 #'
-#' @details Either \code{orig_ds} or \code{true_pars} must be supplied and the other one
-#' must be \code{NULL} (default: both are \code{NULL}, just supply one, see
-#' examples). The following \code{parameter}s are implemented:
-#' "mean", "median", "var", "sd", "quantile", "cov", "cor".
-#' Some details follows:
+#' @details Either \code{ds_orig} or \code{pars_true} must be supplied and the
+#' other one must be \code{NULL} (default: both are \code{NULL}, just supply
+#' one, see examples). The following \code{parameter}s are implemented:
+#' "mean", "median", "var", "sd", "quantile", "cov", "cov_only", cor", "cor_only".
+#' Some details follow:
 #' \itemize{
-#' \item{"var": only the variances of the columns (the diagonal elements of the
-#' covariance matrix) are compared. The whole covariance matrix can be compared
-#' with "cov".}
+#' \item{"var", "cov" and "cov_only": For "var" only the variances of the
+#' columns (the diagonal elements of the covariance matrix) are compared. For
+#' "cov" the whole covariance matrix is compared. For "cov_only" only the upper
+#' triangle (excluding the diagonal) of the covariance matrix is compared.}
+#' \item{"cor", "cor_only": For "cor" the whole correlation matrix is compared.
+#' For "cor_only" only the upper triangle (excluding the diagonal) of the
+#' correlation matrix is compared.}
 #' \item{"quantile": the quantiles can be set via the additional
 #' argument \code{probs} (see examples). Otherwise, the default quantiles from
 #' \code{\link[stats]{quantile}} will be used.}
 #' }
 #'
-#' The argument \code{which_cols} allows the selection of columns for comparison
-#' (see examples). If \code{true_pars} is used, it is assumed that only relevant
+#' The argument \code{cols_which} allows the selection of columns for comparison
+#' (see examples). If \code{pars_true} is used, it is assumed that only relevant
 #' parameters are supplied (see examples).
 #'
 #' Possible choices for the argument \code{criterion} are documented in
@@ -29,61 +33,80 @@
 #'
 #' @inheritParams evaluate_parameters
 #' @inheritParams evaluate_imputed_values
-#' @param parameter a string specifying the estimated parameters for comparison
-#' @param ... further arguments passed to function for parameter estimation
+#' @param parameter A string specifying the estimated parameters for comparison.
+#' @param ... Further arguments passed to the function for parameter estimation.
 #'
 #' @export
 #'
 #' @examples
-#' # only orig_ds known
-#' orig_ds <- data.frame(X = 1:10, Y = 101:101)
-#' imp_ds <- impute_mean(delete_MCAR(orig_ds, 0.4))
-#' evaluate_imputation_parameters(imp_ds, orig_ds = orig_ds)
+#' # only ds_orig known
+#' ds_orig <- data.frame(X = 1:10, Y = 101:101)
+#' ds_imp <- impute_mean(delete_MCAR(ds_orig, 0.4))
+#' evaluate_imputation_parameters(ds_imp, ds_orig = ds_orig)
 #'
 #' # true parameters known
-#' orig_ds <- data.frame(X = rnorm(100), Y = rnorm(100, mean = 10))
-#' imp_ds <- impute_mean(delete_MCAR(orig_ds, 0.3))
-#' evaluate_imputation_parameters(imp_ds, true_pars = c(0, 10), parameter = "mean")
-#' evaluate_imputation_parameters(imp_ds, true_pars = c(1, 1), parameter = "var")
+#' ds_orig <- data.frame(X = rnorm(100), Y = rnorm(100, mean = 10))
+#' ds_imp <- impute_mean(delete_MCAR(ds_orig, 0.3))
+#' evaluate_imputation_parameters(ds_imp, pars_true = c(0, 10), parameter = "mean")
+#' evaluate_imputation_parameters(ds_imp, pars_true = c(1, 1), parameter = "var")
 #'
 #' # set quantiles
-#' evaluate_imputation_parameters(imp_ds,
-#'   true_pars = c(qnorm(0.3), qnorm(0.3, mean = 10)),
+#' evaluate_imputation_parameters(ds_imp,
+#'   pars_true = c(qnorm(0.3), qnorm(0.3, mean = 10)),
 #'   parameter = "quantile", probs = 0.3
 #' )
 #'
 #' # compare only column Y
-#' evaluate_imputation_parameters(imp_ds,
-#'   true_pars = c(Y = 10), parameter = "mean",
-#'   which_cols = "Y"
+#' evaluate_imputation_parameters(ds_imp,
+#'   pars_true = c(Y = 10), parameter = "mean",
+#'   cols_which = "Y"
 #' )
-evaluate_imputation_parameters <- function(imp_ds, orig_ds = NULL, true_pars = NULL,
+evaluate_imputation_parameters <- function(ds_imp,
+                                           ds_orig = NULL, pars_true = NULL,
                                            parameter = "mean", criterion = "RMSE",
-                                           which_cols = seq_len(ncol(imp_ds)),
-                                           tolerance = sqrt(.Machine$double.eps), ...) {
-  if (!xor(is.null(orig_ds), is.null(true_pars))) {
-    stop("exactly one of 'orig_ds' or 'true_pars' must be supplied and the
+                                           cols_which = seq_len(ncol(ds_imp)),
+                                           tolerance = sqrt(.Machine$double.eps),
+                                           ...,
+                                           imp_ds, true_pars, which_cols) {
+  # Deprecate imp_ds, true_pars, which_cols
+  check_renamed_arg(imp_ds, ds_imp)
+  check_renamed_arg(true_pars, pars_true)
+  check_renamed_arg(which_cols, cols_which)
+
+  if (!xor(is.null(ds_orig), is.null(pars_true))) {
+    stop("exactly one of 'ds_orig' or 'pars_true' must be supplied and the
          other one must be NULL")
   }
-  match.arg(parameter, c("mean", "median", "var", "sd", "quantile", "cov", "cor"))
+  match.arg(
+    parameter,
+    c("mean", "median", "var", "sd", "quantile", "cov", "cov_only", "cor", "cor_only")
+  )
 
   calc_pars <- switch(parameter,
     mean = colMeans,
     median = make_col_fun(median),
-    var = function(x) diag(stats::var(x)),
+    var = function(x, ...) diag(stats::var(x, ...)),
     sd = make_col_fun(stats::sd),
     quantile = make_col_fun(stats::quantile),
     cov = stats::cov,
-    cor = stats::cor
+    cov_only = function(x, ...) {
+      whole_cov <- stats::cov(x, ...)
+      whole_cov[upper.tri(whole_cov)]
+    },
+    cor = stats::cor,
+    cor_only = function(x, ...) {
+      whole_cor <- stats::cor(x, ...)
+      whole_cor[upper.tri(whole_cor)]
+    }
   )
 
-  imp_pars <- calc_pars(imp_ds[, which_cols, drop = FALSE], ...)
+  pars_est <- calc_pars(ds_imp[, cols_which, drop = FALSE], ...)
 
-  if (is.null(true_pars)) { # pars must be calculated
-    true_pars <- calc_pars(orig_ds[, which_cols, drop = FALSE], ...)
+  if (is.null(pars_true)) { # pars must be calculated
+    pars_true <- calc_pars(ds_orig[, cols_which, drop = FALSE], ...)
   }
 
-  evaluate_parameters(imp_pars, true_pars,
+  evaluate_parameters(pars_est, pars_true,
     criterion = criterion,
     tolerance = tolerance
   )

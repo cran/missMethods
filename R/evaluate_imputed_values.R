@@ -4,8 +4,8 @@
 #'
 #' @template evaluation
 #'
-#' @details The following \code{criterion}s are implemented to compare the imputed values
-#' to the true values:
+#' @details The following \code{criterion}s are implemented to compare the
+#' imputed values to the true values:
 #' \itemize{
 #' \item{"RMSE" (the default): The Root Mean Squared Error between the imputed
 #' and true values}
@@ -28,36 +28,39 @@
 #' all squared true values}
 #' \item{"NRMSE_tot_sd": RMSE divided by the standard deviation of all true values}
 #' \item{"nr_equal": number of imputed values that are equal to the true values}
-#' \item{"nr_NA": number of values in \code{imp_ds} that are NA (not imputed)}
+#' \item{"nr_NA": number of values in \code{ds_imp} that are NA (not imputed)}
 #' \item{"precision": proportion of imputed values that are equal to the true values}
 #' }
 #' Additionally there are relative versions of bias and MAE implemented. In the
 #' relative versions, the differences are divided by the absolute values of the
 #' true values. These relative versions can be selected via "bias_rel" and
-#' "MAE_rel". The "NRMSE_tot_*" and "NRMSE_col_*" are equal, if the columnwise
+#' "MAE_rel". The "NRMSE_tot_" and "NRMSE_col_" are equal, if the columnwise
 #' normalization values are equal to the total normalization value (see
 #' examples).
 #'
-#' The argument \code{which_cols} allows the selection of columns
+#' The argument \code{cols_which} allows the selection of columns
 #' for comparison (see examples).
 #'
-#' If \code{M = NULL} (the default), then all values of \code{imp_ds} and
-#' \code{orig_ds} will be used for the calculation of the evaluation criterion.
+#' If \code{M = NULL} (the default), then all values of \code{ds_imp} and
+#' \code{ds_orig} will be used for the calculation of the evaluation criterion.
 #' If a missing data indicator matrix is given via \code{M}, only the truly
 #' imputed values (values that are marked as missing via \code{M}) will be used
 #' for the calculation. If you want to provide \code{M}, \code{M} must be a
-#' logical matrix of the same dimensions as \code{orig_ds} and missing values
+#' logical matrix of the same dimensions as \code{ds_orig} and missing values
 #' must be coded as TRUE. This is the standard behavior, if you use
-#' \code{\link[base]{is.na}} on a dataset with missing values to generate
+#' \code{\link{is.na}} on a dataset with missing values to generate
 #' \code{M} (see examples). It is possible to combine \code{M} and
-#' \code{which_cols}.
+#' \code{cols_which}.
 #'
-#' @param imp_ds a data frame or matrix with imputed values
-#' @param orig_ds a data frame or matrix with original (true) values
-#' @param which_cols indices or names of columns used for evaluation
-#' @param M NULL (the default) or a missing data indicator matrix; the missing
-#'   data indicator matrix is normally created via \code{is.na(miss_ds)}, where
-#'   \code{miss_ds} is the dataset after deleting values from \code{orig_ds}
+#' @param ds_imp A data frame or matrix with imputed values.
+#' @param ds_orig A data frame or matrix with original (true) values.
+#' @param cols_which Indices or names of columns used for evaluation.
+#' @param M NULL (the default) or a missing data indicator matrix. The missing
+#'   data indicator matrix is normally created via \code{is.na(ds_mis)}, where
+#'   \code{ds_mis} is the dataset after deleting values from \code{ds_orig}.
+#' @param imp_ds Deprecated, renamed to \code{ds_imp}.
+#' @param orig_ds Deprecated, renamed to \code{ds_orig}.
+#' @param which_cols Deprecated, renamed to \code{cols_which}.
 #'
 #' @export
 #'
@@ -66,35 +69,43 @@
 #'   imputation. \emph{Bioinformatics}, 21(2), 187-198.
 #'
 #' @examples
-#' orig_ds <- data.frame(X = 1:10, Y = 101:110)
-#' miss_ds <- delete_MCAR(orig_ds, 0.3)
-#' imp_ds <- impute_mean(miss_ds)
-#' # compare all values from orig_ds and imp_ds
-#' evaluate_imputed_values(imp_ds, orig_ds)
+#' ds_orig <- data.frame(X = 1:10, Y = 101:110)
+#' ds_mis <- delete_MCAR(ds_orig, 0.3)
+#' ds_imp <- impute_mean(ds_mis)
+#' # compare all values from ds_orig and ds_imp
+#' evaluate_imputed_values(ds_imp, ds_orig)
 #' # compare only the imputed values
-#' M <- is.na(miss_ds)
-#' evaluate_imputed_values(imp_ds, orig_ds, M = M)
+#' M <- is.na(ds_mis)
+#' evaluate_imputed_values(ds_imp, ds_orig, M = M)
 #' # compare only the imputed values in column X
-#' evaluate_imputed_values(imp_ds, orig_ds, M = M, which_cols = "X")
+#' evaluate_imputed_values(ds_imp, ds_orig, M = M, cols_which = "X")
 #'
 #' # NRMSE_tot_mean and NRMSE_col_mean are equal, if columnwise means are equal
-#' orig_ds <- data.frame(X = 1:10, Y = 10:1)
-#' miss_ds <- delete_MCAR(orig_ds, 0.3)
-#' imp_ds <- impute_mean(miss_ds)
-#' evaluate_imputed_values(imp_ds, orig_ds, "NRMSE_tot_mean")
-#' evaluate_imputed_values(imp_ds, orig_ds, "NRMSE_col_mean")
-evaluate_imputed_values <- function(imp_ds, orig_ds, criterion = "RMSE", M = NULL,
-                                    which_cols = seq_len(ncol(imp_ds)),
-                                    tolerance = sqrt(.Machine$double.eps)) {
-  if (!isTRUE(all.equal(dim(imp_ds), dim(orig_ds)))) {
-    stop("the dimensions of imp_ds and orig_ds must be equal")
+#' ds_orig <- data.frame(X = 1:10, Y = 10:1)
+#' ds_mis <- delete_MCAR(ds_orig, 0.3)
+#' ds_imp <- impute_mean(ds_mis)
+#' evaluate_imputed_values(ds_imp, ds_orig, "NRMSE_tot_mean")
+#' evaluate_imputed_values(ds_imp, ds_orig, "NRMSE_col_mean")
+evaluate_imputed_values <- function(ds_imp, ds_orig, criterion = "RMSE",
+                                    M = NULL,
+                                    cols_which = seq_len(ncol(ds_imp)),
+                                    tolerance = sqrt(.Machine$double.eps),
+                                    imp_ds, orig_ds, which_cols) {
+
+  # Deprecate imp_ds, orig_ds, which_cols
+  check_renamed_arg(imp_ds, ds_imp)
+  check_renamed_arg(orig_ds, ds_orig)
+  check_renamed_arg(which_cols, cols_which)
+
+  if (!isTRUE(all.equal(dim(ds_imp), dim(ds_orig)))) {
+    stop("the dimensions of ds_imp and ds_orig must be equal")
   }
 
-  imp_ds <- imp_ds[, which_cols, drop = FALSE]
-  orig_ds <- orig_ds[, which_cols, drop = FALSE]
+  ds_imp <- ds_imp[, cols_which, drop = FALSE]
+  ds_orig <- ds_orig[, cols_which, drop = FALSE]
   if (!is.null(M)) {
-    M <- M[, which_cols, drop = FALSE]
+    M <- M[, cols_which, drop = FALSE]
   }
 
-  calc_evaluation_criterion(imp_ds, orig_ds, criterion, M, tolerance = tolerance)
+  calc_evaluation_criterion(ds_imp, ds_orig, criterion, M, tolerance = tolerance)
 }

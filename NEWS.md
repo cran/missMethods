@@ -1,3 +1,26 @@
+# missMethods 0.2.0
+
+## New functions
+
+* `impute_in_classes()` allows to apply any imputation function inside imputation classes 
+* `impute_hot_deck_in_classes()` hot deck imputation inside of imputation classes (adjustment cells)
+* `impute_EM()` imputes values using EM parameter estimates
+* `imputed_expected_values()` imputes expected values from a multivariate normal distribution
+* `impute_LS_adaptive()` performs LSimpute_adaptive as described by Bo et al. (2004)
+* `impute_LS_array()` performs LSimpute_array as described by Bo et al. (2004)
+* `impute_LS_combined()` performs LSimpute_combined as described by Bo et al. (2004)
+* `impute_LS_gene()` performs LSimpute_gene as described by Bo et al. (2004)
+
+## Miscellaneous
+
+* add `cov_only` and `cor_only` as `parameter` in  `evaluate_imputation_parameters()`
+* improve vignette "Generating missing values" (add connections to Santos et al. (2019))
+* rename of `cols` variables: now all should be named `cols_mis`, `cols_ctrl` etc.
+* rename of `ds` variables: now all should be named `ds_imp`, `ds_orig` etc.
+* rename of `pars` variables: now all should be named `pars_est` or `pars_true`
+* sampling of sRHD type `cols_seq` is no correct, if the donor is only one numeric value
+* use markdown for documentation of new functions
+
 # missMethods 0.1.0
 
 ## New functions
@@ -16,11 +39,11 @@ Functions for evaluation:
 
 * `delete_MAR_1_to_x()` and `delete_MNAR_1_to_x()` can now handle (unordered) factors
 * new criteria for `evaluate_imputed_values()` and `evaluate_parameters()`: six forms of NRMSE, nr_equal, nr_NA and precision
-* `evaluate_imputed_values()`: add argument `which_cols` to select columns for evaluation. 
+* `evaluate_imputed_values()`: add argument `cols_which` to select columns for evaluation. 
 
 ## Miscellaneous
 
-* all `delete_` functions now take the same first three arguments: `ds`, `p`, `miss_cols`
+* all `delete_` functions now take the same first three arguments: `ds`, `p`, `cols_mis`
 * package now on GitHub and CRAN
 
 # missMethods 0.0.1

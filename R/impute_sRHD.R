@@ -3,6 +3,9 @@
 #' Impute missing values in a data frame or a matrix using a simple random hot
 #' deck
 #'
+#' @template impute
+#'
+#' @details
 #' There are three types of simple random hot decks implemented. They can be
 #' selected via \code{type}:
 #' \itemize{
@@ -40,18 +43,16 @@
 #' donor limit is applied for every column separately.
 #'
 #'
-#' @param ds a data frame or matrix with missing values
-#' @param type the type of hot deck; the default ("cols_seq") is a random hot
+#' @param type The type of hot deck; the default ("cols_seq") is a random hot
 #'   deck that imputes each column separately. Other choices are "sim_comp" and
 #'   "sim_part". Both impute all missing values in an object (row)
 #'   simultaneously using a single donor object. The difference between the two
 #'   types is the choice of objects that can act as donors. "sim_comp:" only
 #'   completely observed objects can be donors. "sim_part": all objects that
 #'   have no missing values in the missing parts of a recipient can be donors.
-#' @param donor_limit numeric of length one or "min"; how many times an object
+#' @param donor_limit Numeric of length one or "min"; how many times an object
 #'   can be a donor. default is \code{Inf} (no restriction).
 #'
-#' @return An object of the same class as \code{ds} with imputed missing values
 #' @references Andridge, R. R., & Little, R. J. (2010). A review of hot deck
 #'   imputation for survey non-response. \emph{International statistical review},
 #'   78(1), 40-64.
@@ -60,13 +61,13 @@
 #'
 #' @examples
 #' ds <- data.frame(X = 1:20, Y = 101:120)
-#' ds_miss <- delete_MCAR(ds, 0.2)
-#' ds_imp <- impute_sRHD(ds_miss)
+#' ds_mis <- delete_MCAR(ds, 0.2)
+#' ds_imp <- impute_sRHD(ds_mis)
 #' \donttest{
 #' # Warning: donor limit to low
-#' ds_miss_one_donor <- ds
-#' ds_miss_one_donor[1:19, "X"] <- NA
-#' impute_sRHD(ds_miss_one_donor, donor_limit = 3)
+#' ds_mis_one_donor <- ds
+#' ds_mis_one_donor[1:19, "X"] <- NA
+#' impute_sRHD(ds_mis_one_donor, donor_limit = 3)
 #' }
 impute_sRHD <- function(ds, type = "cols_seq", donor_limit = Inf) {
   type <- match.arg(type, c("cols_seq", "sim_comp", "sim_part"))
@@ -98,9 +99,9 @@ impute_sRHD <- function(ds, type = "cols_seq", donor_limit = Inf) {
         theo_min_donor_lim <- min_donor_limit(M, type)
         if (donor_limit < theo_min_donor_lim) {
           warning(
-            "donor_limit = ", donor_limit, " is to low to impute all missing values; ",
-            "it was set to ",
-            theo_min_donor_lim
+            "donor_limit = ", donor_limit,
+            " is to low to impute all missing values; ",
+            "it was set to ", theo_min_donor_lim
           )
           donor_limit <- theo_min_donor_lim
         }
@@ -128,7 +129,10 @@ impute_sRHD <- function(ds, type = "cols_seq", donor_limit = Inf) {
 impute_sRHD_cols_seq <- function(ds, M = is.na(ds), donor_limit) {
   if (is.infinite(donor_limit)) { # Inf donor_limit -> easy/faster implementation
     for (k in seq_len(ncol(ds))) {
-      ds[M[, k], k] <- sample(ds[!M[, k], k, drop = TRUE], sum(M[, k]), replace = TRUE)
+      ds[M[, k], k] <- resample(ds[!M[, k], k, drop = TRUE],
+        sum(M[, k]),
+        replace = TRUE
+      )
     }
   } else { # finite donor_limit ----------------------------
     for (k in seq_len(ncol(ds))) {

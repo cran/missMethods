@@ -7,22 +7,22 @@
 impute_mode(ds, type = "columnwise")
 }
 \arguments{
-\item{ds}{a data frame or matrix with missing values}
+\item{ds}{A data frame or matrix with missing values.}
 
-\item{type}{one of: "columnwise", "rowwise", "total", "Two-Way" or "Winer"
-(see details)}
+\item{type}{One of: "columnwise", "rowwise", "total", "Two-Way" or "Winer"
+(see details).}
 }
 \value{
-An object of the same class as \code{ds} with imputed missing values
+An object of the same class as \code{ds} with imputed missing values.
 }
 \description{
 Impute an observed mode value for every missing value
 }
 \details{
 This function behaves exactly like \code{\link{impute_mean}}. The only
-difference is that it imputes a mode instead of a mean. All \code{type}s from
-\code{\link{impute_mean}} are also implemented for \code{impute_mode}. They
-are documented in \code{\link{impute_mean}} and
+difference is that it imputes a mode instead of a mean. All \code{type}s
+from \code{\link{impute_mean}} are also implemented for \code{impute_mode}.
+They are documented in \code{\link{impute_mean}} and
 \code{\link{apply_imputation}}.
 
 A mode value of a vector \emph{x} is a most frequent value of \emph{x}.
@@ -31,8 +31,8 @@ be used as imputation value.
 }
 \examples{
 ds <- data.frame(X = c(1:12, rep(8, 8)), Y = 101:120)
-ds_miss <- delete_MCAR(ds, 0.2)
-ds_imp <- impute_mode(ds_miss)
+ds_mis <- delete_MCAR(ds, 0.2)
+ds_imp <- impute_mode(ds_mis)
 }
 \references{
 Beland, S., Pichette, F., & Jolani, S. (2016). Impact on Cronbach's
@@ -40,7 +40,7 @@ Beland, S., Pichette, F., & Jolani, S. (2016). Impact on Cronbach's
 \emph{The Quantitative Methods for Psychology}, 12(1), 57-73.
 }
 \seealso{
-\code{\link{apply_imputation}} the workhorse for this function
+\code{\link{apply_imputation}} the workhorse for this function.
 
 Other location parameter imputation functions: 
 \code{\link{impute_mean}()},
