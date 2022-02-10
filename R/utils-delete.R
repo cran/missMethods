@@ -1,142 +1,137 @@
-# checking arguments --------------------------------------
+## Indices for deleting -------------------------------------------------------
 
-# args checking for all mechanisms
-# normally called from check_delete_args_MCAR, check_delete_args_MAR or
-# check_delete_args_MNAR
-check_delete_args <- function(ds, p, cols_mis, stochastic) {
-  # check ds ------------------------------------
-  if (!is_df_or_matrix(ds)) {
-    stop("ds must be a data.frame or a matrix")
+#' Get NA indices
+#'
+#' This function determines the (row) indices, for NA values.
+#'
+#' If `n_mis_stochastic` is false and `prob` is not NULL, the call to `sample()`
+#' can be problematic. Details are documented in the test file (weighted
+#' sampling without replacement).
+#'
+#' @param n_mis_stochastic Logical; as always (see for example `delete_MCAR()`).
+#' @param n integer(1); number of objects
+#' @param p probability for a value to be missing. 0 <= p <= 1
+#' @param prob sampling weights for the indices. Probability for a index to be
+#'   missing is proportional to `prob`. For too high values of `p` some of these
+#'   can be scaled down. 0 and `Inf` are possible. Indices with prob == 0 will
+#'   never be returned. Indices with infinite prob will be considered first.
+#'   Only if there are less indices with infinite prob than `n_mis`, the other
+#'   indices will be considered for missing values.
+#' @param n_mis The number of missing values. Normally, `p` should be supplied
+#'   instead of `n_mis`.
+#' @param indices Indices, which could be set NA.
+#' @param warn Should warnings be given?
+#'
+#' @return (row) indices for setting NA
+#'
+#' @noRd
+get_NA_indices <- function(n_mis_stochastic, n = length(indices), p = n_mis / n,
+                           prob = NULL,
+                           n_mis = round(n * p),
+                           indices = seq_len(n),
+                           warn = getOption("missMethods.warn.too.high.p")) {
+  stopifnot(
+    is.logical(n_mis_stochastic), length(n_mis_stochastic) == 1L,
+    missing(p) || (is.numeric(p) && length(p) == 1L),
+    is.null(prob) || n == length(prob),
+    is.numeric(n_mis), length(n_mis) == 1L,
+    n == length(indices)
+  )
+
+  ## Check for too high p or n_mis (and just it) ------------------------------
+  n_mis_max <- sum(prob > 0)
+  if (!is.null(prob) && n_mis_max < n * p) {
+    max_p <- n_mis_max / n
+    if (warn) {
+      warning(
+        "p = ", p, " is too high for the chosen mechanims (and data);",
+        "it will be reduced to ", max_p
+      )
+    }
+    p <- max_p
+    n_mis <- n_mis_max
   }
 
-  # check p -------------------------------------
-  if (is.numeric(p)) {
-    if (length(p) != 1L && length(p) != length(cols_mis)) {
-      stop("p must be of length 1 or length must equal cols_mis")
-    } else {
-      if (any(p < 0 | p > 1)) {
-        stop("probabilties in p must be between 0 and 1")
-      }
+  ## Check for Inf in prob ----------------------------------------------------
+  prob_inf <- is.infinite(prob)
+  if (!is.null(prob) && any(prob_inf)) {
+    n_inf <- sum(prob_inf)
+    if (n_inf >= n_mis) {
+      # Only indices with prob == Inf should have missing values
+      p <- p * n / n_inf
+      return(Recall(
+        n_mis_stochastic,
+        p = p, n_mis = n_mis,
+        indices = which(prob_inf), prob = NULL
+      ))
+    } else { # Less prob_inf then missing values
+      # All indices with prob == Inf should be NA
+      na_indices_inf <- which(prob_inf)
+      # Remove this indices and probs
+      indices <- indices[!prob_inf]
+      prob <- prob[!prob_inf]
+      # Adjust p and n_mis
+      p <- (n * p - n_inf) / (n - n_inf)
+      n_mis <- n_mis - n_inf
+      further_na_indices <- Recall(n_mis_stochastic, p = p, prob = prob, n_mis = n_mis, indices = indices)
+      return(c(na_indices_inf, further_na_indices))
     }
-  } else {
-    stop("p must be numeric")
   }
 
-  # check cols_mis -----------------------------
-  if (is.numeric(cols_mis)) {
-    if (any(cols_mis < 1 | cols_mis > ncol(ds))) {
-      stop("indices in cols_mis must be in 1:ncol(ds)")
-    }
-  } else if (is.character(cols_mis)) {
-    if (!all(cols_mis %in% colnames(ds))) {
-      stop("all entries of cols_mis must be in colnames(ds)")
-    }
-  } else {
-    stop("cols_mis must be a vector of column names or indices of ds")
-  }
-
-  if (anyDuplicated(cols_mis) != 0) {
-    duplicated_cols <- unique(cols_mis[duplicated(cols_mis)])
+  ## Check for too high prob values -------------------------------------------
+  prob_scaled <- prob / sum(prob)
+  if (!is.null(prob) && any(prob_scaled > 1 / (n * p)) && warn) {
     warning(
-      "there are duplicates in cols_mis:\n", duplicated_cols,
-      "\n this may result in a too high percentage of missing values"
+      "p or some prob values are too high;",
+      " the too high prob values will be scaled down."
     )
   }
 
-  # check stochastic ----------------------------
-  if (!is.logical(stochastic)) {
-    stop("stochastic must be logical")
-  } else if (length(stochastic) != 1L) {
-    stop("the length of stochastic must be 1")
-  }
-}
-
-check_delete_args_MCAR <- function(ds, p, cols_mis, stochastic, p_overall) {
-  # general checking
-  check_delete_args(
-    ds = ds, p = p, cols_mis = cols_mis,
-    stochastic = stochastic
-  )
-
-  # special case: p_overall
-  if (!is.logical(p_overall) | length(p_overall) != 1L) {
-    stop("p_overall must be logical of length 1")
-  } else if (p_overall & !stochastic & length(p) != 1L) {
-    stop("if p_overall = TRUE, then length(p) must be 1")
-  }
-}
-
-check_delete_args_MAR <- function(ds, p, cols_mis, cols_ctrl, stochastic) {
-  # general checking
-  check_delete_args(
-    ds = ds, p = p, cols_mis = cols_mis,
-    stochastic = stochastic
-  )
-
-
-  # check cols_ctrl -----------------------------
-  if (!is.null(cols_ctrl)) {
-    if (is.numeric(cols_ctrl)) {
-      if (any(cols_ctrl < 1 | cols_ctrl > ncol(ds))) {
-        stop("indices in cols_ctrl must be in 1:ncol(ds)")
-      }
-    } else if (is.character(cols_ctrl)) {
-      if (!all(cols_ctrl %in% colnames(ds))) {
-        stop("all entries of cols_ctrl must be in colnames(ds)")
-      }
+  ## Get NA indices -----------------------------------------------------------
+  if (n_mis_stochastic) {
+    if (is.null(prob)) {
+      na_indices <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(p, 1 - p))
+      # na_indices <- stats::runif(n) < p # old
     } else {
-      stop("cols_ctrl must be a vector of column names or indices of ds")
+      # First: Normalize prob
+      prob <- prob / sum(prob)
+      # Do we need to scale prob?
+      while (any(prob > 1 / (n * p))) {
+        # Scale down to big probs
+        to_big <- prob > 1 / (n * p)
+        prob[to_big] <- 1 / (n * p)
+        # Scale up other probs (if they are not 0 and not already scaled)
+        scaled <- prob >= 1 / (n * p)
+        neq_0_not_scaled <- prob > 0 & !scaled
+        if (any(neq_0_not_scaled)) {
+          prob[neq_0_not_scaled] <- prob[neq_0_not_scaled] *
+            (1 - sum(scaled) * 1 / (n * p)) / sum(prob[neq_0_not_scaled])
+        } else {
+          # We would have to delete values from objects with prob == 0!
+          # This should never happen (check for too high p!)!
+          # prob[prob == 0] <- (1 - sum(scaled) * 1 / (n * p)) / sum(prob == 0)
+          break()
+        }
+      }
+      # After this loop all probs should be <= 1/(n*p) and sum(prob) == 1
+      if (any(prob > 1 / (n * p)) || isFALSE(all.equal(sum(prob), 1))) {
+        stop("We have a problem with prob; did you specify 'p' correctly?")
+      }
+
+      prob <- prob * n * p
+
+      # get NA indices
+      na_indices <- stats::runif(n) < prob
     }
+    na_indices <- indices[na_indices]
+  } else { # not n_mis_stochastic
+    na_indices <- resample(indices, n_mis, prob = prob)
   }
-  # no NA in cols_ctrl
-  if (any(is.na(ds[, cols_ctrl]))) {
-    stop("cols_ctrl must be completely observed; no NAs in ds[, cols_ctrl] allowed")
-  }
-
-  if (length(cols_mis) != length(cols_ctrl)) {
-    stop("length(cols_mis) must equal length(cols_ctrl)")
-  }
-
-  # check if any ctrl_col is in cols_mis
-  if (any(cols_ctrl %in% cols_mis)) {
-    stop(
-      "to ensure MAR no ctrl_col is allowed to be in cols_mis;\n",
-      "problematic cols_ctrl:\n",
-      paste(cols_ctrl[cols_ctrl %in% cols_mis], collapse = ", ")
-    )
-  }
-}
-
-check_delete_args_MNAR <- function(ds, p, cols_mis, stochastic) {
-  # general checking
-  check_delete_args(ds = ds, p = p, cols_mis = cols_mis, stochastic = stochastic)
-  #  no NA in cols_mis
-  if (any(is.na(ds[, cols_mis]))) {
-    stop("cols_mis must be completely observed; no NAs in ds[, cols_mis] allowed")
-  }
+  na_indices
 }
 
 
-check_cols_ctrl_1_to_x <- function(ds, cols_ctrl) {
-  # check if cols_ctrl are numeric or ordered factor
-  cols_prob <- integer(0)
-  for (k in seq_along(cols_ctrl)) {
-    if (!(is.ordered(ds[, cols_ctrl[k], drop = TRUE]) |
-      is.numeric(ds[, cols_ctrl[k], drop = TRUE]))) {
-      cols_prob <- c(cols_prob, cols_ctrl[k])
-    }
-  }
-  if (length(cols_prob) > 0L) {
-    stop(
-      "all cols_ctrl must be numeric or ordered factors;\n",
-      "problematic column(s): ",
-      paste(cols_prob, collapse = ", ")
-    )
-  }
-  TRUE
-}
-
-# finding groups ------------------------------------------
+## Finding groups -------------------------------------------------------------
 
 find_groups <- function(x, cutoff_fun, prop, use_lpSolve,
                         ordered_as_unordered, ...) {
@@ -153,6 +148,7 @@ find_groups <- function(x, cutoff_fun, prop, use_lpSolve,
   }
   groups
 }
+
 
 find_groups_by_cutoff_val <- function(x, cutoff_val) {
   # get rows below the cutoff value
@@ -202,6 +198,7 @@ find_groups_by_prop <- function(x, prop, use_lpSolve = TRUE) {
   find_groups_by_values(x, g1_ux)
 }
 
+
 find_groups_by_values <- function(x, values) {
   g1 <- x %in% values
   g2 <- which(!g1)
@@ -209,32 +206,27 @@ find_groups_by_values <- function(x, values) {
   list(g1 = g1, g2 = g2)
 }
 
-# more helpers --------------------------------------------
-adjust_p <- function(p, cols_mis) {
-  if (length(p) == 1L) {
-    p <- rep(p, length(cols_mis))
-  }
-  p
-}
 
-calc_nr_mis_g1 <- function(nr_g1, p_mis_g1,
-                           nr_g2, nr_mis, x) {
-  if (nr_mis == 0L) {
-    nr_mis_g1 <- 0L
+## More helpers ---------------------------------------------------------------
+
+calc_n_mis_g1 <- function(nr_g1, p_mis_g1,
+                          nr_g2, n_mis, x) {
+  if (n_mis == 0L) {
+    n_mis_g1 <- 0L
   } else if (nr_g2 == 0L) {
-    nr_mis_g1 <- nr_mis
+    n_mis_g1 <- n_mis
   } else {
-    nr_mis_g1_ceil <- ceiling(nr_g1 * p_mis_g1)
-    nr_mis_g1_floor <- floor(nr_g1 * p_mis_g1)
-    odds_ceil <- nr_mis_g1_ceil / nr_g1 /
-      ((nr_mis - nr_mis_g1_ceil) / nr_g2)
-    odds_floor <- nr_mis_g1_floor / nr_g1 /
-      ((nr_mis - nr_mis_g1_floor) / nr_g2)
+    n_mis_g1_ceil <- ceiling(nr_g1 * p_mis_g1)
+    n_mis_g1_floor <- floor(nr_g1 * p_mis_g1)
+    odds_ceil <- n_mis_g1_ceil / nr_g1 /
+      ((n_mis - n_mis_g1_ceil) / nr_g2)
+    odds_floor <- n_mis_g1_floor / nr_g1 /
+      ((n_mis - n_mis_g1_floor) / nr_g2)
     if (abs(1 / x - odds_ceil) < abs(1 / x - odds_floor)) {
-      nr_mis_g1 <- nr_mis_g1_ceil
+      n_mis_g1 <- n_mis_g1_ceil
     } else {
-      nr_mis_g1 <- nr_mis_g1_floor
+      n_mis_g1 <- n_mis_g1_floor
     }
   }
-  nr_mis_g1
+  n_mis_g1
 }

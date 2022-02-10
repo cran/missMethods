@@ -3,14 +3,12 @@ delete_one_group <- function(ds, p, cols_mis, cols_ctrl,
                              cutoff_fun = median,
                              prop = 0.5, use_lpSolve = TRUE,
                              ordered_as_unordered = FALSE,
-                             stochastic = FALSE,
+                             n_mis_stochastic = FALSE,
                              ...) {
 
-  # General checking is done in calling functions.
+  # General checking of arguments is done in delete_values().
   # Only special cases are checked here.
   cutoff_fun <- match.fun(cutoff_fun)
-
-  p <- adjust_p(p, cols_mis)
 
   for (i in seq_along(cols_mis)) {
     groups <- find_groups(
@@ -21,23 +19,14 @@ delete_one_group <- function(ds, p, cols_mis, cols_ctrl,
       warning("column ", cols_ctrl[i], " is constant, effectively MCAR")
       ds[, cols_mis[i]] <- delete_MCAR_vec(
         ds[, cols_mis[i], drop = TRUE],
-        p[i], stochastic
+        p[i], n_mis_stochastic
       )
     } else {
       miss_group <- groups[[sample.int(2, 1)]]
-      if (length(miss_group) < round(nrow(ds) * p[i], 0)) {
-        warning(
-          "not enough objects in miss_group in column ", cols_ctrl[i],
-          " to reach p"
-        )
-        ds[miss_group, cols_mis[i]] <- NA
-      } else {
-        eff_p <- p[i] * nrow(ds) / length(miss_group)
-        ds[miss_group, cols_mis[i]] <- delete_MCAR_vec(
-          ds[miss_group, cols_mis[i], drop = TRUE],
-          eff_p, stochastic
-        )
-      }
+      prob_weights <- rep(0, nrow(ds))
+      prob_weights[miss_group] <- 1
+      na_indices <- get_NA_indices(n_mis_stochastic, n = nrow(ds), p = p[i], prob = prob_weights)
+      ds[na_indices, cols_mis[i]] <- NA
     }
   }
   ds
@@ -69,16 +58,14 @@ delete_one_group <- function(ds, p, cols_mis, cols_ctrl,
 #' In the chosen group, values are deleted in \code{cols_mis[i]}.
 #' In the other group, no missing values will be created in \code{cols_mis[i]}.
 #'
-#' If \code{stochastic = FALSE} (the default), then \code{floor(nrow(ds) * p[i])}
-#' or \code{ceiling(nrow(ds) * p[i])} values will be set \code{NA} in
-#' column \code{cols_mis[i]} (depending on the grouping).
-#' If \code{stochastic = TRUE}, each value in the group with missing values
-#' will have a probability to be missing, to meet a proportion of
-#' \code{p[i]} of missing values in \code{cols_mis[i]} in expectation.
-#' The effect of \code{stochastic} is further discussed in
-#' \code{\link{delete_MCAR}}.
-#'
-#'
+#' If \code{p} is too high, it is possible that a group contains not enough
+#' objects to reach \code{nrow(ds) * p} missing values. In this case, \code{p}
+#' is reduced to the maximum possible value (given the (random) group with
+#' missing data) and a warning is given. Obviously this case will occur
+#' regularly, if \code{p > 0.5}. Therefore, this function should normally not be
+#' called with \code{p > 0.5}. However, this can occur for smaller values
+#' of \code{p}, too (depending on the grouping). The warning can be silenced by
+#' setting the option \code{missMethods.warn.too.high.p} to false.
 #'
 #' @inheritParams delete_MAR_1_to_x
 #'
@@ -93,25 +80,12 @@ delete_MAR_one_group <- function(ds, p, cols_mis, cols_ctrl,
                                  cutoff_fun = median, prop = 0.5,
                                  use_lpSolve = TRUE,
                                  ordered_as_unordered = FALSE,
-                                 stochastic = FALSE, ...,
-                                 miss_cols, ctrl_cols) {
-
-  # Deprecate miss_cols, ctrl_cols
-  check_renamed_arg(miss_cols, cols_mis)
-  check_renamed_arg(ctrl_cols, cols_ctrl)
-
-  check_delete_args_MAR(
-    ds = ds, p = p, cols_mis = cols_mis,
-    cols_ctrl = cols_ctrl, stochastic = stochastic
-  )
-
-  delete_one_group(
-    ds = ds, p = p, cols_mis = cols_mis, cols_ctrl = cols_ctrl,
-    cutoff_fun = cutoff_fun, prop = prop,
-    use_lpSolve = use_lpSolve,
-    ordered_as_unordered = ordered_as_unordered,
-    stochastic = stochastic, ...
-  )
+                                 n_mis_stochastic = FALSE, ...,
+                                 miss_cols, ctrl_cols, stochastic) {
+  do.call(delete_values, c(
+    list(mechanism = "MAR", mech_type = "one_group"),
+    as.list(environment()), list(...)
+  ))
 }
 
 
@@ -128,22 +102,10 @@ delete_MNAR_one_group <- function(ds, p, cols_mis,
                                   cutoff_fun = median, prop = 0.5,
                                   use_lpSolve = TRUE,
                                   ordered_as_unordered = FALSE,
-                                  stochastic = FALSE, ...,
-                                  miss_cols) {
-
-  # Deprecate miss_cols
-  check_renamed_arg(miss_cols, cols_mis)
-
-  check_delete_args_MNAR(
-    ds = ds, p = p, cols_mis = cols_mis,
-    stochastic = stochastic
-  )
-
-  delete_one_group(
-    ds = ds, p = p, cols_mis = cols_mis, cols_ctrl = cols_mis,
-    cutoff_fun = cutoff_fun, prop = prop,
-    use_lpSolve = use_lpSolve,
-    ordered_as_unordered = ordered_as_unordered,
-    stochastic = stochastic, ...
-  )
+                                  n_mis_stochastic = FALSE, ...,
+                                  miss_cols, stochastic) {
+  do.call(delete_values, c(
+    list(mechanism = "MNAR", mech_type = "one_group"),
+    as.list(environment()), list(...)
+  ))
 }

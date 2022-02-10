@@ -1,25 +1,3 @@
-# delete_1_to_x and delete_MAR_1_to_x ---------------------
-test_that("delete_MAR_1_to_x() calls check_delete_args_MAR()", {
-  expect_error(
-    delete_MAR_1_to_x(df_XY_100, 0.1, 1, cols_ctrl = 3, x = 2),
-    "indices in cols_ctrl must be in 1:ncol\\(ds)"
-  )
-})
-
-test_that("delete_MAR_1_to_x() deprecate miss_cols", {
-  ds_mis <- expect_warning(
-    delete_MAR_1_to_x(data.frame(X = 1:10, Y = 11:20),
-      0.2,
-      x = 2, cols_ctrl = 2, miss_cols = 1
-    ),
-    "miss_cols is deprecated; use cols_mis instead."
-  )
-  expect_equal(
-    count_NA(ds_mis),
-    c(X = 2, Y = 0)
-  )
-})
-
 test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
           delete_MAR_1_to_x()) works for data.frames", {
   set.seed(12345)
@@ -126,14 +104,14 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   expect_equal(count_NA(df_mis[1:20, ]), c(X = 1, Y = 0, Z = 0))
   expect_equal(count_NA(df_mis[21:100, ]), c(X = 19, Y = 0, Z = 0))
 
-  # check stochastic = TRUE -------------------------------
+  # check n_mis_stochastic = TRUE -------------------------------
   expect_false(anyNA(delete_MAR_1_to_x(df_XYZ_100, 0, "X", "Y",
     x = 3,
-    stochastic = TRUE
+    n_mis_stochastic = TRUE, x_stochastic = TRUE
   )))
   miss_09 <- delete_MAR_1_to_x(df_XYZ_100, 0.9, "X", "Y",
     x = 1.2,
-    stochastic = TRUE
+    n_mis_stochastic = TRUE, x_stochastic = TRUE
   )
   expect_true(anyNA(miss_09))
   expect_true(count_NA(miss_09)["X"] > 0)
@@ -145,7 +123,7 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   for (i in seq_len(N)) {
     ds_mis <- delete_MAR_1_to_x(df_XY_100, 0.5, "X", "Y",
       x = 4,
-      stochastic = TRUE
+      n_mis_stochastic = TRUE, x_stochastic = TRUE
     )
     res[i, "Y"] <- sum(is.na(ds_mis[, "Y"]))
     res[i, "X1"] <- sum(is.na(ds_mis[1:50, "X"]))
@@ -164,18 +142,12 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
     1000,
     sum(is.na(delete_MAR_1_to_x(df_XY_20, 0.9, "X", "Y",
       x = 3,
-      stochastic = TRUE
+      n_mis_stochastic = TRUE
     )[1:10, "X"]))
   ))
   expect_true(mean(test_max_x) < 9 && mean(test_max_x) > 7)
 
   # check special ctrl_col cases --------------------------
-  # ctrl_col constant
-  df_mis <- expect_warning(
-    delete_MAR_1_to_x(df_XY_X_constant, 0.2, cols_mis = "Y", cols_ctrl = "X", x = 3),
-    "is constant"
-  )
-  expect_equal(count_NA(df_mis), c(X = 0, Y = 4))
   # ctr_col nearly constant
   expect_equal(
     count_NA(delete_MAR_1_to_x(df_XY_X_one_outlier, 0.2,
@@ -188,7 +160,7 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   test <- replicate(1000, is.na(delete_MAR_1_to_x(df_XY_X_unequal_dummy, 0.1,
     cols_mis = "Y",
     cols_ctrl = "X", x = 3,
-    stochastic = TRUE
+    n_mis_stochastic = TRUE, x_stochastic = TRUE
   )[11, "Y"]))
   realized_x <- sum(test) /
     ((nrow(df_XY_X_unequal_dummy) * 1000 * 0.1 - sum(test)) / 10)
@@ -225,13 +197,57 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
     c(X = 23 / 7)
   )
 
-  # add_realized_x with stochastic = TRUE
+  # add_realized_x with n_mis_stochastic = TRUE
   df_mis <- delete_MAR_1_to_x(df_XYZ_100, 0.4, "X", "Y",
     x = 3,
-    stochastic = TRUE,
+    n_mis_stochastic = TRUE, x_stochastic = TRUE,
     add_realized_x = TRUE
   )
   expect_true(attributes(df_mis)$realized_x > 0)
+  expect_true(is.finite(attributes(df_mis)$realized_x) > 0)
+})
+
+test_that("delete_1_to_x() checks x_stochastic", {
+  expect_warning(
+    delete_MNAR_1_to_x(
+      df_XY_2, 0.2, "X", 3,
+      n_mis_stochastic = TRUE, x_stochastic = FALSE
+    ),
+    "x_stochastic is set to TRUE because x_stochastic = FALSE is only"
+  )
+})
+
+test_that("delete_1_to_x() works with constant control column", {
+  df_mis <- expect_warning(
+    delete_MAR_1_to_x(df_XY_X_constant, 0.2, cols_mis = "Y", cols_ctrl = "X", x = 3),
+    "is constant"
+  )
+  expect_equal(count_NA(df_mis), c(X = 0, Y = 4))
+})
+
+test_that("delete_1_to_x() works with x_stochastic = TRUE", {
+  # n_mis_stochastic = TRUE
+  N <- 1000
+  set.seed(1234)
+  res <- matrix(nrow = N, ncol = 2)
+  for (i in seq_len(N)) {
+    df_mis <- delete_MNAR_1_to_x(
+      df_XY_20, 0.3, "X",
+      x = 10,
+      x_stochastic = TRUE, n_mis_stochastic = TRUE
+    )
+    res[i, 1] <- sum(is.na(df_mis[, "X"]))
+    res[i, 2] <- sum(is.na(df_mis[1:10, "X"]))
+  }
+  n_mis <- sum(res[, 1])
+  n_g1_mis <- sum(res[, 2])
+  expect_true(stats::qbinom(1e-10, N * 20, 0.3) <= n_mis)
+  expect_true(n_mis <= stats::qbinom(1e-10, N * 20, 0.3, FALSE))
+  expect_true(stats::qbinom(1e-10, N * 10, 2 / 11 * 0.3) <= n_g1_mis)
+  expect_true(n_g1_mis <= stats::qbinom(1e-10, N * 10, 2 / 11 * 0.3, FALSE))
+
+  # n_mis_stochastic = FALSE just calls base::sample()!
+  # see notes in tests for get_NA_indices()
 })
 
 test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
@@ -245,10 +261,10 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   expect_equal(count_NA(mat_mis), c(2, 4, 6, rep(0, 7)))
   expect_equal(count_NA(mat_mis[1:10, ]), c(2, 3, 5, rep(0, 7)))
 
-  # stochastic = TRUE
+  # n_mis_stochastic = TRUE
   mat_mis <- delete_MAR_1_to_x(matrix_100_2, 0.6, 1, 2,
     x = 5,
-    stochastic = TRUE
+    n_mis_stochastic = TRUE, x_stochastic = TRUE
   )
   expect_equal(count_NA(mat_mis[51:100, ]), c(50, 0))
   expect_true(count_NA(mat_mis[1:50, 1, drop = FALSE]) <= 25)
@@ -267,8 +283,12 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   expect_equal(count_NA(tbl_mis), c(X = 10, Y = 20, Z = 0))
   expect_equal(count_NA(tbl_mis[1:50, ]), c(X = 9, Y = 18, Z = 0))
 
-  # stochastic = TRUE
-  tbl_mis <- delete_MAR_1_to_x(tbl_XY_100, 0.6, 1, 2, stochastic = TRUE, x = 5)
+  # n_mis_stochastic = TRUE
+  tbl_mis <- delete_MAR_1_to_x(
+    tbl_XY_100, 0.6, 1, 2,
+    x = 5,
+    n_mis_stochastic = TRUE, x_stochastic = TRUE
+  )
   expect_equal(count_NA(tbl_mis[51:100, ]), c(X = 50, Y = 0))
   expect_true(count_NA(tbl_mis[1:50, 1, drop = FALSE]) <= 25)
   # prob for false:
@@ -279,13 +299,7 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
 # delete_MNAR_1_to_x only calls delete_1_to_x() with cols_ctrl = cols_mis
 # so we only test if the missing values are in the correct variables.
 # The rest of delete_1_to_x() is tested with delete_MAR_1_to_x()
-test_that("delete_MNAR_1_to_x", {
-  # check that delete_MNAR_1_to_x() calls check_delete_args_MNAR()
-  expect_error(
-    delete_MNAR_1_to_x(df_XY_X_mis, 0.1, "X", x = 3),
-    "cols_mis must be completely observed; no NAs in ds\\[, cols_mis\\] allowed"
-  )
-
+test_that("delete_MNAR_1_to_x() works", {
   expect_equal(
     count_NA(delete_MNAR_1_to_x(df_XYZ_100, 0.1, c("X", "Z"), x = 3)),
     c("X" = 10, "Y" = 0, "Z" = 10)
@@ -299,5 +313,21 @@ test_that("delete_MNAR_1_to_x", {
     exact = TRUE
     ),
     c(X = 4, Z = 4)
+  )
+})
+
+## Check check_cols_ctrl_1_to_x() ---------------------------------------------
+test_that("check_cols_ctrl_1_to_x()", {
+  expect_true(check_cols_ctrl_1_to_x(df_XY_100, "X"))
+  expect_error(
+    check_cols_ctrl_1_to_x(
+      data.frame(
+        X = letters,
+        Y = 1:26,
+        Z = LETTERS
+      ),
+      c("X", "Y", "Z")
+    ),
+    "ordered factors;\nproblematic column\\(s): X, Z$"
   )
 })

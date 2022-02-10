@@ -1,142 +1,188 @@
-# check_delete_args ---------------------------------------
-test_that("check_delete_args()", {
-  # ds ----------------------------------------------------
-  expect_error(delete_MCAR(1:5, 0.3), "ds must be a data.frame or a matrix")
+## get_NA_indices() -----------------------------------------------------------
+calc_n_index <- function(NA_indices, index_nr) {
+  sum(vapply(NA_indices, function(x) any(x == index_nr), logical(1)))
+}
 
-  # p -----------------------------------------------------
-  expect_error(
-    delete_MCAR(df_XY_100, p = rep(0.1, 3)),
-    "length must equal cols_mis"
-  )
-  expect_error(
-    delete_MCAR(df_XY_100, p = rep(0.1, 2), "X"),
-    "length must equal cols_mis"
-  )
-  expect_error(
-    delete_MCAR(df_XYZ_100, p = rep(0.1, 2), 1:3),
-    "length must equal cols_mis"
-  )
-  expect_error(
-    delete_MCAR(df_XY_100, p = c(1.2, 0.9)),
-    "must be between 0 and 1"
-  )
-  expect_error(delete_MCAR(df_XY_100, p = "a"), "p must be numeric")
+check_index <- function(NA_indices, index_nr, lower_bound, upper_bound) {
+  n <- calc_n_index(NA_indices, index_nr)
+  expect_true(lower_bound <= n)
+  expect_true(n <= upper_bound)
+}
 
-  # cols_mis ---------------------------------------------
-  expect_error(
-    delete_MCAR(df_XY_100, 0.1, cols_mis = c(2, 3)),
-    "indices in cols_mis must"
+test_that("get_NA_indices() works with comibinations of n_mis_stochastic and prob", {
+  N <- 1000
+  n <- 10
+  p <- 0.1
+  set.seed(12345)
+
+  # n_mis_stochastic + prob = NULL
+  n_mis <- sum(replicate(
+    N, length(get_NA_indices(n_mis_stochastic = TRUE, n = n, p = p, prob = NULL))
+  ))
+  expect_true(stats::qbinom(1e-10, n * N, p) <= n_mis)
+  expect_true(n_mis <= stats::qbinom(1e-10, n * N, p, FALSE))
+
+  # n_mis_stochastic + prob = seq_len(n)
+  NA_indices <- replicate(
+    N, get_NA_indices(n_mis_stochastic = TRUE, n = n, p = p, prob = seq_len(n))
   )
-  expect_error(
-    delete_MCAR(df_XY_100, 0.1, cols_mis = c("X", "Z")),
-    "all entries of cols_mis"
+  n_mis <- sum(vapply(NA_indices, length, integer(1)))
+  expect_true(stats::qbinom(1e-10, n * N, p) <= n_mis)
+  expect_true(n_mis <= stats::qbinom(1e-10, n * N, p, FALSE))
+
+  check_index(
+    NA_indices, 1,
+    stats::qbinom(1e-10, n * N, p * 1 / sum(seq_len(n))),
+    stats::qbinom(1e-10, n * N, p * 1 / sum(seq_len(n)), FALSE)
   )
-  expect_error(
-    delete_MCAR(df_XY_100, 0.1, c(TRUE, FALSE)),
-    "cols_mis must be a vector of column names or indices of ds"
+  check_index(
+    NA_indices, 10,
+    stats::qbinom(1e-10, n * N, p * 10 / sum(seq_len(n))),
+    stats::qbinom(1e-10, n * N, p * 10 / sum(seq_len(n)), FALSE)
   )
+
+
+  # n_mis_stochastic = FALSE + prob = NULL
+  n_mis <- replicate(
+    N, length(get_NA_indices(n_mis_stochastic = FALSE, n = n, p = p, prob = NULL))
+  )
+  expect_true(all(n_mis == 1L))
+
+
+  # n_mis_stochastic = FALSE + prob = seq_len(n)
+  NA_indices <- replicate(
+    N, get_NA_indices(n_mis_stochastic = FALSE, n = n, p = p, prob = seq_len(n))
+  )
+  n_mis <- vapply(NA_indices, length, integer(1))
+  expect_true(all(n_mis == 1L))
+
+  check_index(
+    NA_indices, 1,
+    stats::qbinom(1e-10, n * N, p * 1 / sum(seq_len(n))),
+    stats::qbinom(1e-10, n * N, p * 1 / sum(seq_len(n)), FALSE)
+  )
+  check_index(
+    NA_indices, 10,
+    stats::qbinom(1e-10, n * N, p * 10 / sum(seq_len(n))),
+    stats::qbinom(1e-10, n * N, p * 10 / sum(seq_len(n)), FALSE)
+  )
+})
+
+test_that("get_NA_indices() check and adjust too high p and n_mis", {
+  old <- options("missMethods.warn.too.high.p" = TRUE)
+  # Too high p
+  NA_indices <- expect_warning(
+    get_NA_indices(FALSE, 5, p = 0.9, prob = c(20, 0, 0, 2, 1)),
+    "p = 0.9 is too high for the chosen mechanims \\(and data);it will be reduced to 0.6"
+  )
+  expect_equal(NA_indices, c(1, 4, 5))
+
+  # Too high n_mis
+  NA_indices <- expect_warning(
+    get_NA_indices(FALSE, 5, prob = c(0, 0, 0, 2, 1), n_mis = 3),
+    "p = 0.6 is too high for the chosen mechanims \\(and data);it will be reduced to 0.4"
+  )
+  expect_true(any(NA_indices == c(4L, 5L), NA_indices == c(5L, 4L)))
+  options(old)
+})
+
+test_that("get_NA_indices() works with infinite prob", {
+  N <- 1000
+  # More inf prob as expected n_mis
+  NA_indices <- replicate(N, get_NA_indices(TRUE, 5, p = 0.4, prob = c(Inf, 0, Inf, Inf, 3)))
+  n_mis <- sum(vapply(NA_indices, length, integer(1)))
+  expect_true(stats::qbinom(1e-10, 3 * N, 2 / 3) <= n_mis)
+  expect_true(n_mis <= stats::qbinom(1e-10, 3 * N, 2 / 3, FALSE))
+  expect_equal(calc_n_index(NA_indices, 2), 0)
+  expect_equal(calc_n_index(NA_indices, 5), 0)
+
+  # Less inf prob as expected n_mis
+  NA_indices <- replicate(N, get_NA_indices(TRUE, 5, p = 0.4, prob = c(Inf, 0, 1:3)))
+  n_mis <- sum(vapply(NA_indices, length, integer(1)))
+  expect_true(N + stats::qbinom(1e-10, 4 * N, 0.25) <= n_mis)
+  expect_true(n_mis <= N + stats::qbinom(1e-10, 4 * N, 0.25, FALSE))
+  expect_equal(calc_n_index(NA_indices, 1), N)
+})
+
+test_that("get_NA_indices() scales prob correctly", {
+  N <- 1000
+  n <- 4
+  p <- 3 / 4
+  set.seed(12345)
+
+  # Check for warning
+  old <- options("missMethods.warn.too.high.p" = TRUE)
   expect_warning(
-    delete_MCAR(df_XY_100, 0.1, c(1, 1)),
-    "there are duplicates in cols_mis:"
+    get_NA_indices(n_mis_stochastic = TRUE, n = n, p = p, prob = seq_len(n)),
+    "p or some prob values are too high; the too high prob"
   )
 
-  # stochastic --------------------------------------------
-  expect_error(
-    delete_MCAR(df_XY_100, 0.1, stochastic = "asdf"),
-    "stochastic must be logical"
+  # Silence warnings
+  options("missMethods.warn.too.high.p" = FALSE)
+
+  # n_mis_stochastic + prob = seq_len(n)
+  NA_indices <- replicate(
+    N, get_NA_indices(n_mis_stochastic = TRUE, n = n, p = p, prob = seq_len(n))
   )
-  expect_error(
-    delete_MCAR(df_XY_100, 0.1, stochastic = c(TRUE, TRUE)),
-    "the length of stochastic must be 1"
+  n_mis <- sum(vapply(NA_indices, length, integer(1)))
+  expect_true(stats::qbinom(1e-10, n * N, p) <= n_mis)
+  expect_true(n_mis <= stats::qbinom(1e-10, n * N, p, FALSE))
+
+  check_index(
+    NA_indices, 1,
+    stats::qbinom(1e-10, N, 1 / 3),
+    stats::qbinom(1e-10, N, 1 / 3, FALSE)
   )
+  check_index(
+    NA_indices, 2,
+    stats::qbinom(1e-10, N, 2 / 3),
+    stats::qbinom(1e-10, N, 2 / 3, FALSE)
+  )
+  expect_equal(calc_n_index(NA_indices, 4), N)
+  expect_equal(calc_n_index(NA_indices, 3), N)
+
+  # reset option
+  options(old)
+
+  # n_mis_stochastic = FALSE + prob = seq_len(n)
+  # prob is directly passed to base::sample()
+  # just trust in R Core!
 })
 
-# check_delete_args_MCAR ----------------------------------
-test_that("check_delete_args_MCAR() works", {
-  # check_delete_args_MCAR calls check_delete_args:
-  expect_error(delete_MCAR(1:5, 0.3), "ds must be a data.frame or a matrix")
+## n_mis_stochastic = FALSE and prob not NULL ---------------------------------
+# or in other terms: weighted sampling without replacement
+# base::sample() is problematic for this situation:
 
-  # special errors for check_delete_args_MCAR:
-  expect_error(
-    delete_MCAR(df_XY_100, 0.1, p_overall = "A"),
-    "p_overall must be logical of length 1"
-  )
-  expect_error(
-    delete_MCAR(df_XY_100, c(0.1, 0.2), p_overall = TRUE),
-    "if p_overall = TRUE, then length"
-  )
-})
+# from ?sample:
+# "If replace is false, these probabilities are applied sequentially, that is the
+# probability of choosing the next item is proportional to the weights amongst
+# the remaining items. The number of nonzero weights must be at least size in
+# this case"
+# This will lead to wrong prob, see for example:
+# https://stat.ethz.ch/pipermail/r-help/2008-February/153698.html
+# https://stat.ethz.ch/pipermail/r-help/2007-October/144645.html
 
-
-# check_delete_args_MAR -----------------------------------
-test_that("check_delete_args_MAR() works", {
-  # check_delete_args_MAR calls check_delete_args:
-  expect_error(
-    delete_MAR_1_to_x(1:5, 0.3, "X", "Y"),
-    "ds must be a data.frame or a matrix"
-  )
-
-  # cols_ctrl (special errors) ----------------------------
-  expect_error(
-    delete_MAR_1_to_x(df_XY_100, 0.1, 1, cols_ctrl = 3, x = 2),
-    "indices in cols_ctrl must be in 1:ncol\\(ds)"
-  )
-  expect_error(
-    delete_MAR_1_to_x(df_XY_100, 0.1, 1, cols_ctrl = "Z", x = 2),
-    "all entries of cols_ctrl must be in colnames\\(ds)"
-  )
-  expect_error(
-    delete_MAR_1_to_x(df_XY_100, 0.1, 1, cols_ctrl = factor("X"), x = 2),
-    "cols_ctrl must be a vector of column names or indices of ds"
-  )
-
-  expect_error(
-    delete_MAR_1_to_x(df_XY_X_mis, 0.1, "Y", cols_ctrl = "X", x = 3),
-    "cols_ctrl must be completely observed; no NAs in ds\\[, cols_ctrl\\] allowed"
-  )
-  expect_error(
-    delete_MAR_1_to_x(df_XYZ_100, 0.1, cols_mis = "X", cols_ctrl = c("Y", "Z"), x = 3),
-    "length\\(cols_mis) must equal length"
-  )
-
-  # special errors for check_delete_args_MAR:
-  expect_error(
-    delete_MAR_1_to_x(df_XYZ_100, 0.1, cols_mis = "X", cols_ctrl = "X", x = 4),
-    "to ensure MAR no ctrl_col is allowed to be in cols_mis"
-  )
-})
-
-# check_delete_args_MNAR ----------------------------------
-test_that("check_delete_args_MCAR() works", {
-  # check_delete_args_MNAR calls check_delete_args:
-  expect_error(
-    delete_MNAR_1_to_x(1:5, 0.3, "X", x = 3),
-    "ds must be a data.frame or a matrix"
-  )
-
-  # special errors for check_delete_args_MNAR:
-  expect_error(
-    delete_MNAR_1_to_x(df_XY_X_mis, 0.1, "X", x = 3),
-    "cols_mis must be completely observed; no NAs in ds\\[, cols_mis\\] allowed"
-  )
-})
+# test_that("weighted sampling without replacement works", {
+#   N <- 10000
+#   set.seed(12345)
+#   res <- matrix(nrow = N, ncol = 2)
+#   for (i in seq_len(N)) {
+#     df_mis <- delete_MNAR_1_to_x(
+#       df_XY_20, 0.3, "X", x = 10,
+#       x_stochastic = TRUE, n_mis_stochastic = FALSE
+#     )
+#     res[i, 1] <- sum(is.na(df_mis[, "X"]))
+#     res[i, 2] <- sum(is.na(df_mis[1:10, "X"]))
+#   }
+#   expect_true(all(res[, 1] == 6L))
+#   n_g1_mis <- sum(res[, 2])
+#   expect_true(stats::qbinom(1e-10, N * 10, 2/11 * 0.3) <= n_g1_mis)
+#   expect_true(n_g1_mis <= stats::qbinom(1e-10, N * 10, 2/11 * 0.3, FALSE))
+# })
 
 
-# check check_cols_ctrl_1_to_x ----------------------------
-test_that("check_cols_ctrl_1_to_x()", {
-  expect_true(check_cols_ctrl_1_to_x(df_XY_100, "X"))
-  expect_error(
-    check_cols_ctrl_1_to_x(
-      data.frame(
-        X = letters,
-        Y = 1:26,
-        Z = LETTERS
-      ),
-      c("X", "Y", "Z")
-    ),
-    "ordered factors;\nproblematic column\\(s): X, Z$"
-  )
-})
+
+
 
 # check find_groups ---------------------------------------
 test_that("find_groups() issues a warning for constant x", {
@@ -304,7 +350,6 @@ test_that("find_groups_by_prop()", {
 })
 
 
-
 # check find_groups_by_values -----------------------------
 test_that("find_groups_by_values()", {
   expect_equal(
@@ -323,12 +368,12 @@ test_that("find_groups_by_values()", {
   )
 })
 
-# check calc_nr_mis_g1 --------------------------------
-test_that("calc_nr_mis_g1()", {
-  expect_equal(calc_nr_mis_g1(50, 0.8, 50, 50, 4), 40)
-  expect_equal(calc_nr_mis_g1(50, 0.25, 50, 20, 4), 12)
-  expect_equal(calc_nr_mis_g1(50, 0.45, 50, 30, 3), 22)
-  expect_equal(calc_nr_mis_g1(20, 1 / 17, 80, 20, 4), 1)
+# check calc_n_mis_g1 --------------------------------
+test_that("calc_n_mis_g1() works", {
+  expect_equal(calc_n_mis_g1(50, 0.8, 50, 50, 4), 40)
+  expect_equal(calc_n_mis_g1(50, 0.25, 50, 20, 4), 12)
+  expect_equal(calc_n_mis_g1(50, 0.45, 50, 30, 3), 22)
+  expect_equal(calc_n_mis_g1(20, 1 / 17, 80, 20, 4), 1)
 
-  expect_equal(calc_nr_mis_g1(50, 0.8, 0, 50, 4), 50)
+  expect_equal(calc_n_mis_g1(50, 0.8, 0, 50, 4), 50)
 })

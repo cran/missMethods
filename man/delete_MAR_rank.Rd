@@ -9,6 +9,7 @@ delete_MAR_rank(
   p,
   cols_mis,
   cols_ctrl,
+  n_mis_stochastic = FALSE,
   ties.method = "average",
   miss_cols,
   ctrl_cols
@@ -27,11 +28,20 @@ missing values will be created.}
 controls the creation of missing values in \code{cols_mis}. Must be of the
 same length as \code{cols_mis}.}
 
+\item{n_mis_stochastic}{Logical, should the number of missing values be
+stochastic? If \code{n_mis_stochastic = TRUE}, the number of missing values
+for a column with missing values \code{cols_mis[i]} is a random variable
+with expected value \code{nrow(ds) * p[i]}. If \code{n_mis_stochastic =
+FALSE}, the number of missing values will be deterministic. Normally, the
+number of missing values for a column with missing values
+\code{cols_mis[i]} is \code{round(nrow(ds) * p[i])}. Possible deviations
+from this value, if any exists, are documented in Details.}
+
 \item{ties.method}{How ties are handled. Passed to \code{\link[base]{rank}}.}
 
-\item{miss_cols}{Deprecated, use cols_mis instead.}
+\item{miss_cols}{Deprecated, use \code{cols_mis} instead.}
 
-\item{ctrl_cols}{Deprecated, use cols_ctrl instead.}
+\item{ctrl_cols}{Deprecated, use \code{cols_ctrl} instead.}
 }
 \value{
 An object of the same class as \code{ds} with missing values.
@@ -58,14 +68,25 @@ The position of the missing values in \code{cols_mis[i]} is controlled by
 The following procedure is applied for each pair of \code{cols_ctrl[i]} and
 \code{cols_mis[i]} to determine the positions of missing values:
 
-The probability for a missing value in a row of \code{cols_mis[i]} is
+At first, the probability for a value to be missing is calculated. This
+probability for a missing value in a row of \code{cols_mis[i]} is
 proportional to the rank of the value in \code{cols_ctrl[i]} in the same row.
-In total \code{round(nrow(ds) * p[i])} missing values are created in
-\code{cols_mis[i]}.
+If \code{n_mis_stochastic = FALSE} these probabilities are given to the
+\code{prob} argument of \code{\link[base]{sample}}. If \code{n_mis_stochastic
+= TRUE}, they are scaled to sum up to \code{nrow(ds) * p[i]}. Then for each
+probability a uniformly distributed random number is generated. If this
+random number is less than the probability, the value in \code{cols_mis[i]}
+is set \code{NA}.
+
 The ranks are calculated via \code{\link[base]{rank}}.
 The argument \code{ties.method} is directly passed to this function.
 Possible choices for \code{ties.method} are documented in
 \code{\link[base]{rank}}.
+
+For high values of \code{p} it is mathematically not possible to get
+probabilities proportional to the ranks. In this case, a warning is given.
+This warning can be silenced by setting the option
+\code{missMethods.warn.too.high.p} to false.
 }
 \examples{
 ds <- data.frame(X = 1:20, Y = 101:120)

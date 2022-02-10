@@ -8,6 +8,7 @@ delete_MNAR_censoring(
   ds,
   p,
   cols_mis,
+  n_mis_stochastic = FALSE,
   where = "lower",
   sorting = TRUE,
   miss_cols
@@ -22,12 +23,21 @@ the probability that a value is missing.}
 \item{cols_mis}{A vector of column names or indices of columns in which
 missing values will be created.}
 
+\item{n_mis_stochastic}{Logical, should the number of missing values be
+stochastic? If \code{n_mis_stochastic = TRUE}, the number of missing values
+for a column with missing values \code{cols_mis[i]} is a random variable
+with expected value \code{nrow(ds) * p[i]}. If \code{n_mis_stochastic =
+FALSE}, the number of missing values will be deterministic. Normally, the
+number of missing values for a column with missing values
+\code{cols_mis[i]} is \code{round(nrow(ds) * p[i])}. Possible deviations
+from this value, if any exists, are documented in Details.}
+
 \item{where}{Controls where missing values are created; one of "lower",
 "upper" or "both" (see details).}
 
 \item{sorting}{Logical; should sorting be used or a quantile as a threshold.}
 
-\item{miss_cols}{Deprecated, use cols_mis instead.}
+\item{miss_cols}{Deprecated, use \code{cols_mis} instead.}
 }
 \value{
 An object of the same class as \code{ds} with missing values.

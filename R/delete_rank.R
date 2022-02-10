@@ -1,20 +1,13 @@
 # the workhorse for delete_MAR_rank and delete_MNAR_rank
-delete_rank <- function(ds, p, cols_mis, cols_ctrl,
+delete_rank <- function(ds, p, cols_mis, cols_ctrl, n_mis_stochastic,
                         ties.method = "average") {
-
-  # General checking is done in calling functions delete_MAR_rank and
-  # delete_MNAR_rank. Only special cases are checked here.
-
-  p <- adjust_p(p, cols_mis)
-
   for (i in seq_along(cols_mis)) {
-    n_mis <- round(nrow(ds) * p[i])
-    if (n_mis > 0L) {
-      p_ranks <- rank(ds[, cols_ctrl[i], drop = TRUE])
-      p_ranks <- p_ranks / sum(p_ranks)
-      na_indices <- sample.int(nrow(ds), n_mis, prob = p_ranks)
-      ds[na_indices, cols_mis[i]] <- NA
-    }
+    p_ranks <- rank(ds[, cols_ctrl[i], drop = TRUE])
+    na_indices <- get_NA_indices(
+      n_mis_stochastic = n_mis_stochastic,
+      n = nrow(ds), p = p[i], prob = p_ranks
+    )
+    ds[na_indices, cols_mis[i]] <- NA
   }
   ds
 }
@@ -29,14 +22,25 @@ delete_rank <- function(ds, p, cols_mis, cols_ctrl,
 #' @template MAR
 #'
 #' @details
-#' The probability for a missing value in a row of \code{cols_mis[i]} is
+#' At first, the probability for a value to be missing is calculated. This
+#' probability for a missing value in a row of \code{cols_mis[i]} is
 #' proportional to the rank of the value in \code{cols_ctrl[i]} in the same row.
-#' In total \code{round(nrow(ds) * p[i])} missing values are created in
-#' \code{cols_mis[i]}.
+#' If \code{n_mis_stochastic = FALSE} these probabilities are given to the
+#' \code{prob} argument of \code{\link[base]{sample}}. If \code{n_mis_stochastic
+#' = TRUE}, they are scaled to sum up to \code{nrow(ds) * p[i]}. Then for each
+#' probability a uniformly distributed random number is generated. If this
+#' random number is less than the probability, the value in \code{cols_mis[i]}
+#' is set \code{NA}.
+#'
 #' The ranks are calculated via \code{\link[base]{rank}}.
 #' The argument \code{ties.method} is directly passed to this function.
 #' Possible choices for \code{ties.method} are documented in
 #' \code{\link[base]{rank}}.
+#'
+#' For high values of \code{p} it is mathematically not possible to get
+#' probabilities proportional to the ranks. In this case, a warning is given.
+#' This warning can be silenced by setting the option
+#' \code{missMethods.warn.too.high.p} to false.
 #'
 #' @param ties.method How ties are handled. Passed to \code{\link[base]{rank}}.
 #'
@@ -45,24 +49,13 @@ delete_rank <- function(ds, p, cols_mis, cols_ctrl,
 #' @examples
 #' ds <- data.frame(X = 1:20, Y = 101:120)
 #' delete_MAR_rank(ds, 0.2, "X", "Y")
-delete_MAR_rank <- function(ds, p, cols_mis, cols_ctrl,
+delete_MAR_rank <- function(ds, p, cols_mis, cols_ctrl, n_mis_stochastic = FALSE,
                             ties.method = "average",
                             miss_cols, ctrl_cols) {
-
-  # Deprecate miss_cols, ctrl_cols
-  check_renamed_arg(miss_cols, cols_mis)
-  check_renamed_arg(ctrl_cols, cols_ctrl)
-
-  # arg stochastic not used (and method is not stochastic)
-  check_delete_args_MAR(
-    ds = ds, p = p, cols_mis = cols_mis,
-    cols_ctrl = cols_ctrl, stochastic = FALSE
-  )
-
-  delete_rank(
-    ds = ds, p = p, cols_mis = cols_mis, cols_ctrl = cols_ctrl,
-    ties.method = ties.method
-  )
+  do.call(delete_values, c(
+    list(mechanism = "MAR", mech_type = "rank"),
+    as.list(environment())
+  ))
 }
 
 #' Create MNAR values using a ranking mechanism
@@ -74,20 +67,11 @@ delete_MAR_rank <- function(ds, p, cols_mis, cols_ctrl,
 #'
 #' @examples
 #' delete_MNAR_rank(ds, 0.2, "X")
-delete_MNAR_rank <- function(ds, p, cols_mis, ties.method = "average",
+delete_MNAR_rank <- function(ds, p, cols_mis, n_mis_stochastic = FALSE,
+                             ties.method = "average",
                              miss_cols) {
-
-  # Deprecate miss_cols
-  check_renamed_arg(miss_cols, cols_mis)
-
-  # arg stochastic not used! (and method is not stochastic)
-  check_delete_args_MNAR(
-    ds = ds, p = p, cols_mis = cols_mis,
-    stochastic = FALSE
-  )
-
-  delete_rank(
-    ds = ds, p = p, cols_mis = cols_mis, cols_ctrl = cols_mis,
-    ties.method = ties.method
-  )
+  do.call(delete_values, c(
+    list(mechanism = "MNAR", mech_type = "rank"),
+    as.list(environment())
+  ))
 }

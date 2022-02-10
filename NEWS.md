@@ -1,3 +1,42 @@
+# missMethods 0.3.0
+
+## Update of delete_ functions
+
+### User-visible changes
+
+* All `delete_` functions have the argument `n_mis_stochastic` now. For some
+  functions, this is only a renaming of the old `stochastic` argument (e.g.
+  `delete_MCAR()`), for others this is completely new. The new name emphasis 
+  that this argument controls if the *number of missing values* is stochastic 
+  or deterministic. 
+* `delete_MAR_1_to_x()` and `delete_MNAR_1_to_x()` get a new argument 
+  `x_stochastic` along the line of `n_mis_stochastic`.
+* Add the (package-wide) option `missMethods.warn.too.high.p` to control the 
+  displaying of warnings for too high values of `p` (the probability for a 
+  value to be missing).
+
+### Internal
+
+* `delete_values()` and `get_NA_indices()` centralize many steps of the old 
+  (not exported) `delete_` functions. 
+* All `delete_MAR_` and `delete_MNAR_` functions and `delete_MCAR()` call the 
+  new `delete_values()` function now. 
+* Most of the `delete_` functions use the new `get_NA_indices()` to determine
+  the missing values. 
+
+## Miscellaneous
+
+* Evaluation functions can now compare a data frame with a matrix (thanks to 
+  Marie Feldhoff for the suggestion).
+* `impute_EM()` now returns the number of performed EM iterations as attribute.
+* `delete_rank()` now hands the argument `ties.method` over to `rank()`.
+* Fix two tests for `delete_one_group()` (wrong argument `FUN` instead of 
+  `cutoff_fun`).
+* Correct documentation of `median.factor()` (thanks to @labachevskij).
+* `impute_LS_adaptive()` has now the default setting `warn_r_max = FALSE`.
+* Remove LazyData from DESCRIPTION (fix for a CRAN NOTE).
+
+
 # missMethods 0.2.0
 
 ## New functions
@@ -18,7 +57,7 @@
 * rename of `cols` variables: now all should be named `cols_mis`, `cols_ctrl` etc.
 * rename of `ds` variables: now all should be named `ds_imp`, `ds_orig` etc.
 * rename of `pars` variables: now all should be named `pars_est` or `pars_true`
-* sampling of sRHD type `cols_seq` is no correct, if the donor is only one numeric value
+* sampling of sRHD type `cols_seq` is now correct, if the donor is only one numeric value
 * use markdown for documentation of new functions
 
 # missMethods 0.1.0
