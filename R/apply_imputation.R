@@ -30,7 +30,7 @@
 #' \code{ds}.}
 #' \item{"Winer": The mean value from "columnwise" and "rowwise" is used as the
 #' imputation value.}
-#' \item{"Two-way": The sum of the values from "columnwise" and "rowwise" minus
+#' \item{"Two-Way": The sum of the values from "columnwise" and "rowwise" minus
 #' "total" is used as the imputation value.}
 #' }
 #'
@@ -39,7 +39,10 @@
 #' and no value will be imputed in the corresponding column or row.
 #'
 #' @param FUN The function to be applied for imputation.
-#' @param type A string specifying the values used for imputation (see details).
+#' @param type A string specifying the values used for imputation; one of:
+#'    "columnwise", "rowwise", "total", "Two-Way" or "Winer"  (see details).
+#' @param convert_tibble If \code{ds} is a tibble, should it be converted
+#'    (see section A note for tibble users).
 #' @param ... Further arguments passed to \code{FUN}.
 #'
 #' @seealso A convenient interface exists for common cases like mean imputation:
@@ -60,7 +63,7 @@
 #' # the same result can be achieved via impute_mean():
 #' ds_imp_mean <- impute_mean(ds_mis, type = "total")
 #' all.equal(ds_imp_app, ds_imp_mean)
-apply_imputation <- function(ds, FUN = mean, type = "columnwise", ...) {
+apply_imputation <- function(ds, FUN = mean, type = "columnwise", convert_tibble = TRUE, ...) {
   # The workhorse for the location parameter imputation methods and other
   # imputation methods
 
@@ -74,20 +77,10 @@ apply_imputation <- function(ds, FUN = mean, type = "columnwise", ...) {
     c("columnwise", "rowwise", "total", "Two-Way", "Winer")
   )
 
-  if (requireNamespace("tibble", quietly = TRUE)) {
-    if (tibble::is_tibble(ds) && type %in% c("total", "Two-Way") &&
-      utils::packageVersion("tibble") < package_version("2.99.99.9012")) {
-      stop("ds is a tibble and logical subsetting, which is needed for '
-      total' and 'Two-Way', is only supported for tibbles with package
-      versions >= 2.99.99.9012; possible solutions:
-      * update package tibble
-      * convert ds to data frame via as.data.frame
-      * do not use 'total' or 'Two-Way'",
-        call. = FALSE
-      )
-      # for more details see:
-      # https://github.com/tidyverse/tibble/releases/tag/v2.99.99.9012
-    }
+  tibble_converted <- FALSE
+  if (is_tibble_save(ds) && convert_tibble) {
+    ds <- as.data.frame(ds)
+    tibble_converted <- TRUE
   }
 
   # define M and check all NA
@@ -119,7 +112,7 @@ apply_imputation <- function(ds, FUN = mean, type = "columnwise", ...) {
           " all values are NA; the row cannot be imputed"
         )
       } else if (any(M_i)) {
-        ds[i, M_i] <- FUN(ds[i, !M_i, drop = TRUE], ...)
+        ds[i, M_i] <- FUN(unlist(ds[i, !M_i, drop = TRUE]), ...)
       }
     }
   } else if (type == "total") { # total -------------------
@@ -159,6 +152,10 @@ apply_imputation <- function(ds, FUN = mean, type = "columnwise", ...) {
     }
   } else {
     stop("type ", type, " is not implemented")
+  }
+
+  if (tibble_converted) {
+    ds <- tibble::as_tibble(ds)
   }
 
   ds

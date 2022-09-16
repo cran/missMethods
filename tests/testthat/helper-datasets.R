@@ -1,6 +1,3 @@
-count_NA <- function(ds) colSums(is.na(ds))
-
-
 # define some complete data frames for testing ------------
 df_XY_2 <- data.frame(X = 1:2, Y = 101:102)
 df_XY_20 <- data.frame(X = 1:20, Y = 101:120)
@@ -17,6 +14,13 @@ df_XY_X_binary <- data.frame(X = c(rep(1, 10), rep(0, 10)), Y = 1:20)
 df_ordered <- data.frame(let = ordered(letters), LET = ordered(LETTERS))
 
 df_classes_test <- data.frame(X = c(1, 1, 2, 2, 2), Y = c(5, 3, 3, 4, 3))
+
+n <- 20
+df_mixed <- data.frame(
+  X_double = seq(0, 1, length.out = n), X_int = seq_len(n),
+  X_ord = ordered(letters[1:n]), X_unord = factor(LETTERS[1:n]),
+  X_char = LETTERS[1:n]
+)
 
 
 # define some incomplete data frames for testing ----------
@@ -45,6 +49,11 @@ df_with_ord_factors_mis <- df_with_ord_factors
 df_with_ord_factors_mis[2:5, "X"] <- NA
 df_with_ord_factors_mis[12:15, "Y"] <- NA
 
+df_mixed_mis <- delete_MCAR(df_mixed, 0.3)
+
+df_XYZ_100_mis <- df_XYZ_100
+df_XYZ_100_mis[c(1:2, 25:50), "X"] <- NA
+df_XYZ_100_mis[c(2, 3, 20:30), "Y"] <- NA
 
 # define some special cases -------------------------------
 # one completely missing column
@@ -85,6 +94,7 @@ tbl_XY_20 <- tibble::tibble(X = 1:20, Y = 101:120)
 tbl_XYZ_100 <- tibble::tibble(X = 1:100, Y = 101:200, Z = 300:201)
 
 tbl_classes_test <- tibble::as_tibble(df_classes_test)
+tbl_mixed <- tibble::as_tibble(df_mixed)
 
 
 ## Define some incomplete tibbles for testing ---------------------------------
@@ -93,3 +103,5 @@ tbl_XY_X_mis[c(1, 3, 5, 20:40), "X"] <- NA
 
 tbl_XY_XY_mis <- tbl_XY_X_mis
 tbl_XY_XY_mis[c(2, 4, 5, 30:50), "Y"] <- NA
+
+tbl_mixed_mis <- delete_MCAR(tbl_mixed, 0.3)

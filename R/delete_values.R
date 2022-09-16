@@ -4,7 +4,7 @@
 # (via do.call()). Inside delete_values() arguments, which should not be passed
 # on, must be removed (via (remove() or args$argName <-NULL). Finally,
 # delete_values() calls delete_mech_type() or .delete_MCAR().
-delete_values <- function(mechanism, mech_type, ds, p, cols_mis, n_mis_stochastic,
+delete_values <- function(mech_type, ds, p, cols_mis, n_mis_stochastic,
                           cols_ctrl,
                           p_overall,
                           miss_cols, ctrl_cols, stochastic,
@@ -20,18 +20,24 @@ delete_values <- function(mechanism, mech_type, ds, p, cols_mis, n_mis_stochasti
   ## Check and adjust arguments -----------------------------------------------
   check_delete_args_general(ds, p, cols_mis, n_mis_stochastic)
 
-  if (mechanism == "MCAR") {
+ if (mech_type == "MCAR") {
+    mechanism <- "MCAR"
     check_args_MCAR(p, p_overall)
     remove(cols_ctrl)
-  } else if (mechanism == "MAR") {
-    check_args_MAR(ds, cols_mis, cols_ctrl)
+  } else if (mech_type %in% c("MAR_1_to_x", "MNAR_1_to_x", "MAR_censoring",
+                              "MNAR_censoring", "MAR_one_group", "MNAR_one_group",
+                              "MAR_rank", "MNAR_rank")){
+    mechanism <- substr(mech_type, 1, regexpr("_", mech_type) - 1)
+    mech_type <- substr(mech_type, regexpr("_", mech_type) + 1, nchar(mech_type))
     remove(p_overall)
-  } else if (mechanism == "MNAR") {
-    check_args_MNAR(ds, cols_mis)
-    cols_ctrl <- cols_mis
-    remove(p_overall)
+    if (mechanism == "MAR") {
+      check_args_MAR(ds, cols_mis, cols_ctrl)
+    } else { # MNAR
+      check_args_MNAR(ds, cols_mis)
+      cols_ctrl <- cols_mis
+    }
   } else {
-    stop("mechanism must be one of MCAR, MAR or MNAR")
+    stop("Invalid missing data mechanismus '", mech_type, "'")
   }
 
   p <- adjust_p(p, cols_mis)

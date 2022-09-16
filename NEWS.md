@@ -1,3 +1,26 @@
+# missMethods 0.4.0
+
+## New functions
+* `count_NA()` counts the number of missing values in a vector, data frame or 
+  matrix.
+  
+## Improvements
+* `apply_imputation()` and friends now have an option to convert tibbles 
+  instead of throwing an error.
+
+## Fixes
+* `delete_MAR_1_to_x()` and `delete_MNAR_1_to_x()` now handle unordered factors
+  as documented (thanks to Steve Roehrig for reporting).
+* `delete_MAR_1_to_x()` and `delete_MNAR_1_to_x()` now display the correct 
+   adjusted `x` value, if it is too high or too low (thanks to Steve Roehrig 
+   for reporting).
+* `apply_imputation()` type rowwise now works for data frames (thanks to 
+  @khughitt for fixing).
+
+## Internal
+
+* `delete_values()` now only takes `mech_type` and derives `mechanism`.
+
 # missMethods 0.3.0
 
 ## Update of delete_ functions

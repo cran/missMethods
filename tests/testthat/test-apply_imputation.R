@@ -52,6 +52,17 @@ test_that("apply_imputation() works with data.frames", {
     df_XY_X_mis[is.na(df_XY_X_mis), "Y"]
   )
 
+  df_XYZ_imp <- impute_mean(df_XYZ_100_mis, type = "rowwise")
+  expect_false(anyNA(df_XYZ_imp))
+  expect_equal(
+    df_XYZ_imp[1, 1],
+    mean(unlist(df_XYZ_100_mis[1, ]), na.rm = TRUE)
+  )
+  expect_equal(
+    df_XYZ_imp[2, 2],
+    mean(unlist(df_XYZ_100_mis[2, ]), na.rm = TRUE)
+  )
+
   # check special cases for rowwise -----------------------
   expect_warning(
     impute_mean(df_one_comp_missing_col, type = "rowwise"),
@@ -183,12 +194,27 @@ test_that("apply_imputation() works with matrices", {
 })
 
 test_that("apply_imputation() works with tibbles", {
-  # apply_imputation is rather tricky with tibbles
-  # before tibble version 3.0.0 subsetting with logical matrices was not supported,
-  # but integer columns were converted to doubles without even a warning, if needed.
-  # Now with tibble version >= 3.0.0 subsetting with logical matrices work,
-  # but now integer columns throw an error, if a double is imputed..
-  # So, testing highly depends on the used version of tibbles.
+  # Tibbles by default are converted to a data frame, imputed and reconverted
+  # to a tibble. If tibbles are not converted, the results are highly depend on
+  # the tibble and the package version of tibble. So, just basic testing for
+  # this case is done here.
+
+  #############################################################################
+  ### old comments (before convert_tibble was introduced in version 0.3.0.9000)
+  ## apply_imputation is rather tricky with tibbles
+  ## before tibble version 3.0.0 subsetting with logical matrices was not supported,
+  ## but integer columns were converted to doubles without even a warning, if needed.
+  ## Now with tibble version >= 3.0.0 subsetting with logical matrices work,
+  ## but now integer columns throw an error, if a double is imputed..
+  ## So, testing highly depends on the used version of tibbles.
+  #############################################################################
+
+  tibble_imputed <- impute_mean(tbl_XY_XY_mis, convert_tibble = TRUE)
+  expect_false(anyNA(tibble_imputed))
+  expect_true(tibble::is_tibble(tibble_imputed))
+  # without convert_tibble = TRUE the integer columns could not be imputed with
+  # non-integer mean and would throw an error
+
 
   # If columns are first converted to doubles, all versions of tibble should
   # work with the types "columnwise", "rowwise" and "Winer"
@@ -197,41 +223,46 @@ test_that("apply_imputation() works with tibbles", {
   tbl_XY_XY_mis_dbl$X <- as.double(tbl_XY_XY_mis_dbl$X)
   tbl_XY_XY_mis_dbl$Y <- as.double(tbl_XY_XY_mis_dbl$Y)
 
-  expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl, type = "columnwise")))
+  expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl, type = "columnwise", convert_tibble = FALSE)))
   expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl[-c(5, 30:40), ],
-    type = "rowwise"
+    type = "rowwise", convert_tibble = FALSE
   )))
   expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl[-c(5, 30:40), ],
-    type = "Winer"
+    type = "Winer", convert_tibble = FALSE
   )))
 
   # Furthermore, if tibble version >= these solution should also work for the
   # tpyes "total" and "Two-Way":
   if (utils::packageVersion("tibble") >= package_version("3.0.0")) {
-    expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl, type = "total")))
+    expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl, type = "total", convert_tibble = FALSE)))
     expect_false(anyNA(impute_mean(tbl_XY_XY_mis_dbl[-c(5, 30:40), ],
-      type = "Two-Way"
+      type = "Two-Way", convert_tibble = FALSE
     )))
   }
-
-  # Check that a meaningfull error is thrown for the types "total" and "Two-Way",
-  # if version of tibble < 2.99.99.9012
-  # https://github.com/tidyverse/tibble/releases/tag/v2.99.99.9012
-
-  if (utils::packageVersion("tibble") < package_version("2.99.99.9012")) {
-    expect_error(
-      impute_mean(tbl_XY_XY_mis, type = "total"),
-      "ds is a tibble and logical subsetting, which is needed for"
-    )
-    expect_error(
-      impute_mean(tbl_XY_XY_mis[-c(5, 30:40), ], type = "Two-Way"),
-      "ds is a tibble and logical subsetting, which is needed for"
-    )
-  }
-
-  # All other tests and there possible errors would highly depend on the
+  # All other tests and their possible errors would highly depend on the
   # version of tibble and are omitted.
 })
+
+# tests for mixed data sets -----------------------------------------
+
+test_that("apply_imputation() works with mixed data frames", {
+  df_imp <- impute_mode(df_mixed_mis, type = "columnwise")
+  expect_false(anyNA(df_imp))
+  expect_equal(
+    sapply(df_imp, class),
+    sapply(df_mixed, class)
+  )
+})
+
+test_that("apply_imputation() works with mixed tibbles", {
+  df_imp <- impute_mode(df_mixed_mis, type = "columnwise")
+  expect_false(anyNA(df_imp))
+  expect_equal(
+    sapply(df_imp, class),
+    sapply(df_mixed, class)
+  )
+})
+
 
 # mean imputation -----------------------------------------
 # most of the general checking is done in apply_imputation(),

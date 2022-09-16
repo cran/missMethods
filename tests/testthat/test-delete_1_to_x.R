@@ -51,7 +51,8 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
 
   expect_warning(
     df_small_x <- delete_MAR_1_to_x(df_XYZ_100, 0.6, "X", "Y", x = 1e-5),
-    "p is too high or x to low; x is set to 0.2 to get expected"
+    "p is too high or x to low; x is set to the minimum possible value (0.2) to get expected",
+    fixed = TRUE
   )
   expect_equal(count_NA(df_small_x), c(X = 60, Y = 0, Z = 0))
   expect_equal(count_NA(df_small_x[1:50, ]), c(X = 50, Y = 0, Z = 0))
@@ -63,7 +64,8 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
 
   expect_warning(
     df_big_x <- delete_MAR_1_to_x(df_XYZ_100, 0.6, "X", "Y", x = 1e10),
-    "p \\(or x) is too high; x is set to 5 to get expected"
+    "p (or x) is too high; x is set to the maximum possible value (5) to get expected",
+    fixed = TRUE
   )
   expect_equal(count_NA(df_big_x), c(X = 60, Y = 0, Z = 0))
   expect_equal(count_NA(df_big_x[51:100, ]), c(X = 50, Y = 0, Z = 0))
@@ -71,7 +73,8 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   # too high x, p combination:
   expect_warning(
     df_mis <- delete_MAR_1_to_x(df_XY_100, 0.9, "X", "Y", x = 3),
-    "p \\(or x) is too high; x is set to 1.25"
+    "p (or x) is too high; x is set to the maximum possible value (1.25) to get expected",
+    fixed = TRUE
   )
   expect_equal(count_NA(df_mis), c(X = 90, Y = 0))
   expect_equal(count_NA(df_mis[51:100, ]), c(X = 50, Y = 0))
@@ -79,7 +82,8 @@ test_that("delete_MAR_1_to_x() (and delete_1_to_x(), which is called by
   # too low x (for high p):
   expect_warning(
     df_mis <- delete_MAR_1_to_x(df_XY_100, 0.9, "X", "Y", x = 0.1),
-    "p is too high or x to low; x is set to 0.8"
+    "p is too high or x to low; x is set to the minimum possible value (0.8) to get expected",
+    fixed = TRUE
   )
   expect_equal(count_NA(df_mis), c(X = 90, Y = 0))
   expect_equal(count_NA(df_mis[51:100, ]), c(X = 40, Y = 0))
@@ -316,18 +320,15 @@ test_that("delete_MNAR_1_to_x() works", {
   )
 })
 
-## Check check_cols_ctrl_1_to_x() ---------------------------------------------
-test_that("check_cols_ctrl_1_to_x()", {
-  expect_true(check_cols_ctrl_1_to_x(df_XY_100, "X"))
-  expect_error(
-    check_cols_ctrl_1_to_x(
-      data.frame(
-        X = letters,
-        Y = 1:26,
-        Z = LETTERS
-      ),
-      c("X", "Y", "Z")
-    ),
-    "ordered factors;\nproblematic column\\(s): X, Z$"
-  )
+
+## Check delete_MAR_1_to_x() works with unordered cols_ctrl --------------------
+test_that("delete_MAR_1_to_x() works with unorded cols_ctrl", {
+  test <- delete_MAR_1_to_x(data.frame(
+    X1 = letters,
+    X2 = as.factor(LETTERS),
+    Y1 = 1:26,
+    Y2 = 27:52
+  ),
+  0.2, cols_mis = c("Y1", "Y2"), cols_ctrl = c("X1", "X2"), x = 2)
+  expect_equal(count_NA(test), c(X1 = 0, X2 = 0, Y1 = 5, Y2 = 5))
 })
